@@ -21,6 +21,23 @@
 - **判定の境目・辞書・点数は仮置きです。** 現場の支援者が `genai_core.py` を書きかえて使います。
 - **点検は見落とします。** 「見つからなかった」は「安全」ではありません。最後に確かめるのは人です。
 
+## 仮想研究事例（本人のみ）
+
+「使う」と「任せる」の境界設計による小規模農業法人のレジリエンス経営、という研究テーマ案を、架空のデータで最後まで通したページです。
+
+| 段階 | 問い | 手法 | 次へ渡すもの |
+|---|---|---|---|
+| A | どこが困っているか | 作業日誌の辞書分析（否定の除外、3類型、共起）→ 委任マップ | AIの効く事務の割合 |
+| B | どう割り当てるか | 全探索・貪欲法、天候が変わる週次計画（動的計画法・Q学習、承認の制約） | 導入期の割当 |
+| C | 本当に効いたか | 複数法人の ABAB、繁忙期・雨の調整、階層ベイズ | 事務の時短率 |
+| D | ショックに耐えるか | 委任水準 × ガードレール のシミュレーション | 経営指標・設計シート |
+
+- **合言葉を置いた環境でだけ現れます。** `CASE_STUDY_PASSWORD` が Secrets（または環境変数）にないと、メニューに出ず、ページを直接開いても中身を描きません。
+- 手元で見る：`.streamlit/secrets.toml`（`.gitignore` 済み）に `CASE_STUDY_PASSWORD = "自分で決めた合言葉"` と書いて `streamlit run app.py`。
+- Streamlit Community Cloud で見る：アプリの Settings → Secrets に同じ1行を入れる。
+- **鍵がかかるのは画面だけです。** リポジトリが公開なら、コード（`agri_case.py`、`views/case_study.py`）とダミーデータ（`data/agri_case/`）は GitHub 上で誰でも読めます。中身ごと伏せるには、リポジトリを非公開にします。
+- データはすべて架空で、`python agri_case.py --make-data` が乱数から作ります。辞書・境目・係数は仮置きで、出てくる数字は研究結果ではありません。
+
 ## 動かす
 
 ```bash
@@ -32,6 +49,7 @@ streamlit run app.py
 
 ```bash
 python genai_core.py     # 計算部品の自己チェック
+python agri_case.py      # 仮想研究事例の自己チェック
 pip install pytest && pytest -q   # 部品のテスト＋全ページの描画テスト
 ```
 
@@ -48,8 +66,10 @@ pip install pytest && pytest -q   # 部品のテスト＋全ページの描画�
 ```
 app.py            入口（st.navigation で7ページを束ねる）
 genai_core.py     データと計算（Streamlit 非依存）
-ui.py             見出し・色などの共通部品
-views/            7つのページ
-tests/            部品のテスト、ページの描画テスト
+agri_case.py      仮想研究事例のデータ生成と計算（Streamlit 非依存）
+ui.py             見出し・色などの共通部品、研究ページの鍵
+views/            7つのページ ＋ case_study.py（仮想研究事例）
+data/agri_case/   ダミーデータ（CSV）
+tests/            部品のテスト、ページの描画テスト、鍵のテスト
 .streamlit/       テーマ設定
 ```
