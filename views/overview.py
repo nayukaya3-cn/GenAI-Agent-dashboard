@@ -47,3 +47,5 @@ st.dataframe(pd.DataFrame([
     ("06 任せる", "業務を工程に分け、人・生成AI・エージェントに割りふる", "役割の整理メモ、AI駆動開発のセキュリティ本の三本柱"),
     ("07 確かめる", "次に試す使い方を選び、効果を一人ひとりの記録で比べる", "AI伴走ページの記録、福祉×生成AI ⑥"),
 ], columns=["段", "やること", "もとになった材料"]), hide_index=True, use_container_width=True)
+
+ui.contact()
