@@ -73,3 +73,5 @@ else:
 st.subheader("公平に比べるための4つの問い")
 st.dataframe(pd.DataFrame(gc.FAIR, columns=["問い", "中身"]), hide_index=True, use_container_width=True)
 st.caption("「AIを使った日のほうが速かった」は、まぎれこむものを消すまで、AIのおかげとは言えません。因果を考えるときの基本の形です。")
+
+ui.contact()

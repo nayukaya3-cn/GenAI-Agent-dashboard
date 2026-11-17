@@ -14,6 +14,16 @@
 | 06 任せる | `views/agent.py` | 工程ごとの担当・権限・承認を決める設計シート、ガードレール確認 |
 | 07 確かめる | `views/measure.py` | トンプソン抽出（探索と活用）、ABAB（PND・NAP・ベイズ）、公平な比較 |
 
+## つくった人・連絡先
+
+全ページのサイドバーと、「01 知る」「07 確かめる」の最後に、Facebook・LinkedIn へのボタンがあります。
+URL は `social.py` で一括管理しています（姉妹サイト「スマートパン屋農家」と同じ内容）。
+
+- Facebook：<https://www.facebook.com/profile.php?id=100079624235158>
+- LinkedIn：<https://www.linkedin.com/in/%E9%9A%86%E8%A6%8F-%E6%A5%A0%E9%A6%99%E8%B0%B7-392aa12a0/>
+
+支援の記録や個人が分かる情報は、メッセージに書かないでください。
+
 ## 方針
 
 - **生成AIを呼び出しません。** APIキーを持たず、入力を外へ送りません。組み立てた文は、利用者が自分で貼ります。
@@ -48,7 +58,8 @@ pip install pytest && pytest -q   # 部品のテスト＋全ページの描画�
 ```
 app.py            入口（st.navigation で7ページを束ねる）
 genai_core.py     データと計算（Streamlit 非依存）
-ui.py             見出し・色などの共通部品
+ui.py             見出し・色・サイドバー・連絡欄などの共通部品
+social.py         Facebook・LinkedIn のボタン（URLの一括管理）
 views/            7つのページ
 tests/            部品のテスト、ページの描画テスト
 .streamlit/       テーマ設定
