@@ -47,7 +47,6 @@ def sidebar_note() -> None:
                    "[スマートパン屋農家](https://smart-bakery-farm.streamlit.app/)・"
                    "[科学と人間生活](https://science-and-our-daily-life-20261106.streamlit.app/)・"
                    "[IoTフィールドワーク](https://iot-fieldwork-dashboard-20261115.streamlit.app/)")
-        st.caption("[GitHub（ソースコード）](https://github.com/nayukaya3-cn/GenAI-Agent-dashboard)")
 
 
 def contact() -> None:
