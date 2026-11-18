@@ -1,16 +1,22 @@
 """
-生成AI＆AIエージェント利活用ダッシュボード（Streamlit）
+「農＋X」ライフスタイル × 生成AI ダッシュボード（Streamlit）
 起動： streamlit run app.py
-計算は genai_core.py（Streamlit 非依存、`python genai_core.py` で自己チェック）。画面は views/ の7ページ。
+メイン：農＋X（views/nox_*.py、計算は nox_core.py）。後ろに生成AIの道具箱 01〜07（views/、計算は genai_core.py）。
+どちらの計算部品も Streamlit 非依存で、`python nox_core.py`／`python genai_core.py` で自己チェックできる。
 """
 import streamlit as st
 
 import ui
 
-st.set_page_config(page_title="生成AI＆AIエージェント利活用", page_icon="🧭", layout="wide")
+st.set_page_config(page_title="農＋X ライフスタイル × 生成AI", page_icon="🌾", layout="wide")
 SHORT = {"overview": "生成AIとエージェント", "agent": "エージェント設計"}   # サイドバーに収まる短い名前
-pages = [st.Page(f"views/{k}.py", title=f"{no} {verb}｜{SHORT.get(k, sub)}", url_path=k, default=(k == "overview"))
-         for k, no, verb, sub in ui.STEPS]
+NOX_SHORT = {"nox_home": "暮らしの風景を届ける", "nox_rotation": "輪作と時間", "nox_portfolio": "収入の組み合わせ",
+             "nox_market": "風景パッケージ・支援", "nox_teach": "作業学習・科学と人間生活"}
+pages = {
+    "農＋X ライフスタイル": [st.Page(ui.page_path(k), title=f"{verb}｜{NOX_SHORT[k]}", url_path=k.removeprefix("nox_") if k != "nox_home" else "home",
+                                  default=(k == "nox_home")) for k, no, verb, sub in ui.NOX],
+    "生成AIの道具箱": [st.Page(f"views/{k}.py", title=f"{no} {verb}｜{SHORT.get(k, sub)}", url_path=k) for k, no, verb, sub in ui.STEPS],
+}
 nav = st.navigation(pages)
 ui.sidebar_note()
 nav.run()
