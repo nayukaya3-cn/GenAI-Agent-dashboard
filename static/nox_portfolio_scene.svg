@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" role="img" aria-labelledby="t d">
+  <title id="t">収入：組み合わせと悪い年への強さ</title>
+  <desc id="d">小麦・大豆・定期便・教える・支えるの5本の柱が一つの屋根を支える家。片側に雨雲、片側に太陽。足もとには、たくさん試した手取りの山形の分布。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3eefb"/><stop offset="0.62" stop-color="#fbf6ee"/><stop offset="1" stop-color="#f1eadf"/></linearGradient>
+  </defs>
+  <rect width="480" height="360" rx="18" fill="url(#bg)"/>
+
+  <!-- 太陽（良い年） -->
+  <g transform="translate(400 62)">
+    <circle r="36" fill="#fbd38d" opacity="0.3"/><circle r="24" fill="#fbd38d"/>
+  </g>
+  <!-- 雨雲（悪い年） -->
+  <g transform="translate(78 58)">
+    <ellipse cx="0" cy="0" rx="40" ry="20" fill="#c3ccd8"/><ellipse cx="-22" cy="6" rx="24" ry="16" fill="#c3ccd8"/><ellipse cx="24" cy="6" rx="26" ry="16" fill="#c3ccd8"/>
+    <g stroke="#2a78d6" stroke-width="3" stroke-linecap="round" opacity="0.8">
+      <line x1="-24" y1="30" x2="-30" y2="44"/><line x1="-4" y1="30" x2="-10" y2="44"/><line x1="16" y1="30" x2="10" y2="44"/><line x1="36" y1="30" x2="30" y2="44"/>
+    </g>
+  </g>
+  <!-- 雨をはじく傘のような屋根 -->
+  <path d="M110 128 L240 70 L370 128 Z" fill="#eb6834"/>
+  <path d="M110 128 L240 70 L370 128" fill="none" stroke="#c4501f" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="116" y="126" width="248" height="12" rx="4" fill="#c4501f"/>
+
+  <!-- 5本の柱 -->
+  <g>
+    <!-- 小麦 -->
+    <rect x="128" y="138" width="34" height="100" rx="4" fill="#f2d98f" stroke="#c99a3a" stroke-width="2"/>
+    <g fill="#d9a744"><ellipse cx="145" cy="164" rx="4" ry="10"/><ellipse cx="137" cy="178" rx="3" ry="8" transform="rotate(-25 137 178)"/><ellipse cx="153" cy="178" rx="3" ry="8" transform="rotate(25 153 178)"/></g>
+    <line x1="145" y1="172" x2="145" y2="212" stroke="#c99a3a" stroke-width="2"/>
+    <!-- 大豆 -->
+    <rect x="174" y="138" width="34" height="100" rx="4" fill="#b9d9a8" stroke="#5f9651" stroke-width="2"/>
+    <path d="M182 176 q9 -16 20 -4 q-10 10 -20 4 Z" fill="#7fb06e" stroke="#5f9651"/>
+    <g fill="#5f9651"><circle cx="186" cy="204" r="4"/><circle cx="196" cy="204" r="4"/><circle cx="191" cy="213" r="4"/></g>
+    <!-- 定期便（箱） -->
+    <rect x="220" y="138" width="40" height="100" rx="4" fill="#fde9df" stroke="#eb6834" stroke-width="2"/>
+    <rect x="228" y="176" width="24" height="18" rx="2" fill="#e2b886" stroke="#b9854f"/>
+    <line x1="228" y1="182" x2="252" y2="182" stroke="#b9854f"/>
+    <path d="M236 204 q4 -6 8 0 q-4 6 -8 0" fill="#eb6834"/>
+    <!-- 教える（本） -->
+    <rect x="272" y="138" width="34" height="100" rx="4" fill="#e9f1fc" stroke="#2a78d6" stroke-width="2"/>
+    <path d="M278 178 h22 v20 h-22 z" fill="#ffffff" stroke="#2a78d6" stroke-width="1.5"/><line x1="289" y1="178" x2="289" y2="198" stroke="#2a78d6" stroke-width="1.5"/>
+    <!-- 支える（ノートPC） -->
+    <rect x="318" y="138" width="34" height="100" rx="4" fill="#f3f5f8" stroke="#6b7a90" stroke-width="2"/>
+    <rect x="324" y="178" width="22" height="14" rx="2" fill="#ffffff" stroke="#6b7a90" stroke-width="1.5"/>
+    <path d="M320 196 h30" stroke="#6b7a90" stroke-width="3" stroke-linecap="round"/>
+    <polyline points="327,188 333,184 337,186 343,181" fill="none" stroke="#2a78d6" stroke-width="1.5"/>
+  </g>
+  <!-- 土台 -->
+  <rect x="112" y="236" width="256" height="12" rx="4" fill="#a8703f"/>
+
+  <!-- 足もと：1万年分の手取りの分布（ヒストグラム） -->
+  <g transform="translate(96 330)">
+    <line x1="0" y1="0" x2="288" y2="0" stroke="#9aa5b4" stroke-width="2"/>
+    <g fill="#2a78d6" opacity="0.85">
+      <rect x="10" y="-8" width="20" height="8"/><rect x="34" y="-16" width="20" height="16"/><rect x="58" y="-30" width="20" height="30"/>
+      <rect x="82" y="-46" width="20" height="46"/><rect x="106" y="-60" width="20" height="60"/><rect x="130" y="-66" width="20" height="66"/>
+      <rect x="154" y="-58" width="20" height="58"/><rect x="178" y="-44" width="20" height="44"/><rect x="202" y="-28" width="20" height="28"/>
+      <rect x="226" y="-14" width="20" height="14"/><rect x="250" y="-6" width="20" height="6"/>
+    </g>
+    <!-- 悪い年の線（下側5%） -->
+    <line x1="56" y1="-74" x2="56" y2="0" stroke="#eb6834" stroke-width="2.5" stroke-dasharray="5 4"/>
+    <circle cx="56" cy="-78" r="5" fill="#eb6834"/>
+  </g>
+</svg>

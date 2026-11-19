@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" role="img" aria-labelledby="t d">
+  <title id="t">X 売る：風景パッケージとマーケティング支援</title>
+  <desc id="d">麦畑の風景のはがき、パン、小麦粉の袋、豆を詰めた定期便の木箱。箱から点線がスマートフォンの投稿と、ハートの灯る家へつながる。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf3ea"/><stop offset="1" stop-color="#f1eadf"/></linearGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe2f8"/><stop offset="1" stop-color="#fdf1e6"/></linearGradient>
+    <radialGradient id="loaf" cx="0.45" cy="0.35" r="0.75"><stop offset="0" stop-color="#e9a65a"/><stop offset="0.7" stop-color="#c97a34"/><stop offset="1" stop-color="#9c5a22"/></radialGradient>
+  </defs>
+  <rect width="480" height="360" rx="18" fill="url(#bg)"/>
+
+  <!-- つながりの点線 -->
+  <path d="M300 190 Q350 120 392 112" fill="none" stroke="#eb6834" stroke-width="2.5" stroke-dasharray="6 6"/>
+  <path d="M310 250 Q370 270 400 252" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-dasharray="6 6"/>
+
+  <!-- 定期便の木箱（開いたふた） -->
+  <path d="M60 184 L96 140 H286 L310 184 Z" fill="#d9a06a" stroke="#a8703f" stroke-width="2"/>
+  <rect x="56" y="184" width="256" height="118" rx="6" fill="#c98f5a" stroke="#a8703f" stroke-width="2"/>
+  <g stroke="#a8703f" stroke-width="1.5" opacity="0.6"><line x1="56" y1="224" x2="312" y2="224"/><line x1="56" y1="264" x2="312" y2="264"/></g>
+  <!-- 詰めもの（わら） -->
+  <path d="M64 188 q20 -10 40 0 q20 -10 40 0 q20 -10 40 0 q20 -10 40 0 q20 -10 40 0 q20 -10 40 0" fill="none" stroke="#e8c46a" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- 風景のはがき（箱に立てかけ） -->
+  <g transform="rotate(-8 120 150)">
+    <rect x="72" y="84" width="104" height="80" rx="6" fill="#ffffff" stroke="#c9ced8" stroke-width="2"/>
+    <rect x="80" y="92" width="88" height="54" rx="3" fill="url(#sky)"/>
+    <circle cx="150" cy="106" r="8" fill="#fbd38d"/>
+    <path d="M80 124 Q110 112 140 122 T168 118 V146 H80 Z" fill="#a9c7a0"/>
+    <path d="M80 134 Q120 126 168 132 V146 H80 Z" fill="#e8c46a"/>
+    <path d="M84 154 h50" stroke="#c9ced8" stroke-width="2"/>
+  </g>
+  <!-- パン -->
+  <ellipse cx="226" cy="176" rx="46" ry="26" fill="url(#loaf)"/>
+  <g fill="none" stroke="#f6d3a0" stroke-width="3" stroke-linecap="round"><path d="M200 170 q10 -8 20 -2"/><path d="M222 164 q10 -8 20 0"/></g>
+  <!-- 小麦粉の袋 -->
+  <path d="M262 120 h34 l6 70 h-46 z" fill="#ffffff" stroke="#9aa5b4" stroke-width="2"/>
+  <path d="M262 120 l6 -8 h22 l6 8" fill="#f3f5f8" stroke="#9aa5b4" stroke-width="2"/>
+  <g fill="#d9a744"><ellipse cx="279" cy="150" rx="3" ry="8"/><ellipse cx="271" cy="158" rx="2.5" ry="7" transform="rotate(-25 271 158)"/><ellipse cx="287" cy="158" rx="2.5" ry="7" transform="rotate(25 287 158)"/></g>
+  <!-- 豆の小袋 -->
+  <rect x="140" y="178" width="40" height="30" rx="6" fill="#b9d9a8" stroke="#5f9651" stroke-width="2"/>
+  <g fill="#e8d7a8" stroke="#c9a25a"><circle cx="152" cy="192" r="4"/><circle cx="162" cy="196" r="4"/><circle cx="170" cy="190" r="4"/></g>
+  <!-- 箱の焼き印（輪作マーク） -->
+  <g transform="translate(184 262)">
+    <circle r="20" fill="none" stroke="#7a4d22" stroke-width="2.5"/>
+    <path d="M-10 -4 a11 11 0 0 1 19 -4" fill="none" stroke="#7a4d22" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M10 4 a11 11 0 0 1 -19 4" fill="none" stroke="#7a4d22" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- スマートフォン（発信） -->
+  <g transform="translate(386 38)">
+    <rect width="68" height="120" rx="12" fill="#14171d"/>
+    <rect x="6" y="12" width="56" height="96" rx="6" fill="#ffffff"/>
+    <rect x="12" y="20" width="44" height="34" rx="3" fill="#f2d98f"/>
+    <circle cx="44" cy="30" r="5" fill="#fbd38d"/>
+    <path d="M12 46 Q30 38 56 44 V54 H12 Z" fill="#7fb06e"/>
+    <path d="M14 64 h36 M14 72 h28" stroke="#c9ced8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M20 92 c-6 -6 2 -12 6 -6 c4 -6 12 0 6 6 l-6 6 z" fill="#eb6834"/>
+    <path d="M36 88 h14 v8 h-8 l-4 4 v-4 h-2 z" fill="#2a78d6"/>
+  </g>
+
+  <!-- 家（ファン）とハート -->
+  <g transform="translate(400 210)">
+    <path d="M0 30 L32 4 L64 30 Z" fill="#2a78d6"/>
+    <rect x="6" y="30" width="52" height="42" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+    <rect x="26" y="48" width="12" height="24" fill="#e9f1fc" stroke="#2a78d6"/>
+    <rect x="12" y="38" width="10" height="10" fill="#fbd38d"/><rect x="42" y="38" width="10" height="10" fill="#fbd38d"/>
+    <path d="M32 -18 c-10 -10 4 -20 10 -10 c6 -10 20 0 10 10 l-10 10 z" transform="translate(-10 0)" fill="#eb6834"/>
+  </g>
+
+  <!-- 支援先の農業法人（右下の小さな倉庫） -->
+  <g transform="translate(330 300)">
+    <path d="M0 20 Q22 0 44 20 V44 H0 Z" fill="#f3f5f8" stroke="#6b7a90" stroke-width="2"/>
+    <rect x="14" y="28" width="16" height="16" fill="#ffffff" stroke="#6b7a90"/>
+  </g>
+</svg>

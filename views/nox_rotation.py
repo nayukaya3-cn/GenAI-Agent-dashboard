@@ -5,7 +5,7 @@ import streamlit as st
 import nox_core as nx
 import ui
 
-ui.header("nox_rotation", "パン用小麦と枝豆・大豆は、作業の山がきれいにずれます。そこに野菜と加工、X（教える・支える）の時間を重ね、"
+ui.header("nox_rotation", image="static/nox_rotation_scene.svg", lead="パン用小麦と枝豆・大豆は、作業の山がきれいにずれます。そこに野菜と加工、X（教える・支える）の時間を重ね、"
           "毎月「余白」が残るかを確かめます。作業時間は仮置きです。自分の畑の記録で書きかえてください。")
 
 st.subheader("ブロック輪作の一年")
