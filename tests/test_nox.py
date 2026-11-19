@@ -39,3 +39,26 @@ def test_sns_prompt_is_clean_and_complete():
 def test_new_flow_gates_the_irreversible_send():
     st = gc.flow_stats(gc.FLOWS["定期便（農＋X）"])
     assert st["gates"][-1] and st["stage"] == 3
+
+
+def test_kentei_gate_and_grades():
+    for name, k in nx.KENTEI.items():
+        n = len(k["項目"])
+        assert nx.kentei_grade(name, [])["級"] == "級なし"
+        assert nx.kentei_grade(name, range(1, n + 1))["級"] == "1級"
+        # 1・2のどちらかが欠けると、3以降をいくつ合格しても数えない
+        assert nx.kentei_grade(name, range(2, n + 1))["数"] == 1
+        # 項目が増えるほど級は下がらない
+        order = k["級"]
+        last = 0
+        for m in range(n + 1):
+            i = order.index(nx.kentei_grade(name, range(1, m + 1))["級"])
+            assert i >= last
+            last = i
+
+
+def test_scene_check_covers_every_pattern():
+    import itertools
+    for row in itertools.product(nx.JEED_LEVELS, repeat=3):
+        assert nx.scene_check(row)
+    assert nx.scene_check(["まだ", "できる", "できる"]).startswith("作業学習でまだ")

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POPづくりカード（生成AIでPOPをつくる）</title>
+<style>
+  :root{
+    --ground:#f6f1e7; --paper:#fffdf8; --ink:#2b2118; --sub:#5c4f42; --line:#e2d6c2;
+    --green:#2f5d3a; --green-soft:#e4ede3; --orange:#9a5a12; --orange-soft:#f6e7d3; --warn:#9b2c1d; --warn-soft:#fbe5e1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif;font-size:18px;line-height:1.7}
+  main{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+  h1{font-size:28px;margin:0 0 4px}
+  .lead{color:var(--sub);margin:0 0 20px}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+  .tabs button{flex:1 1 140px;min-height:52px;border:2px solid var(--line);background:var(--paper);border-radius:14px;font:inherit;font-weight:700;color:var(--ink);cursor:pointer}
+  .tabs button[aria-selected="true"]{background:var(--green);border-color:var(--green);color:#fff}
+  section.step{background:var(--paper);border:2px solid var(--line);border-radius:18px;padding:20px 22px;margin:0 0 18px}
+  section.step h2{font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:12px}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:20px;background:var(--green);color:#fff;font-size:20px;flex:0 0 auto}
+  .hint{color:var(--sub);font-size:16px;margin:0 0 14px}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  label.field{display:flex;flex-direction:column;gap:4px;font-weight:700}
+  input[type=text]{font:inherit;min-height:48px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  input[type=text]:focus,button:focus-visible{outline:3px solid #d08a2b;outline-offset:2px}
+  .group{margin:14px 0 6px}
+  .group h3{font-size:18px;margin:0 0 8px}
+  .cards{display:flex;flex-wrap:wrap;gap:10px}
+  .card{min-height:56px;min-width:120px;padding:8px 16px;border:2px solid var(--line);border-radius:14px;background:#fff;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px}
+  .card svg{flex:0 0 auto}
+  .card[aria-pressed="true"]{border-color:var(--green);background:var(--green-soft);box-shadow:inset 0 0 0 2px var(--green)}
+  .card.feel[aria-pressed="true"]{border-color:var(--orange);background:var(--orange-soft);box-shadow:inset 0 0 0 2px var(--orange)}
+  pre.prompt{white-space:pre-wrap;background:#fbf8f1;border:2px dashed var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;font:inherit;font-size:17px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{min-height:52px;padding:8px 20px;border-radius:14px;border:2px solid var(--green);background:var(--green);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+  .btn.ghost{background:#fff;color:var(--green)}
+  .status{font-weight:700;color:var(--green)}
+  .samples{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .samples button{min-height:48px;padding:6px 14px;border-radius:12px;border:2px solid var(--line);background:#fff;font:inherit;cursor:pointer;color:var(--ink)}
+  .alert{border-radius:12px;padding:10px 14px;margin:10px 0 0;font-weight:700}
+  .alert.ng{background:var(--warn-soft);color:var(--warn);border:2px solid #e9b4aa}
+  .alert.ok{background:var(--green-soft);color:var(--green);border:2px solid #b9d0b6}
+  /* POP preview */
+  .previewWrap{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+  .pop{background:#fff;border:3px solid var(--popc,#2f5d3a);border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;color:#1d1712}
+  .pop .band{background:var(--popc,#2f5d3a);color:#fff;font-weight:700;text-align:center}
+  .pop .catch{font-weight:800;text-align:center;line-height:1.35;color:var(--popc,#2f5d3a)}
+  .pop .name{font-weight:800;text-align:center}
+  .pop .price{font-weight:900;text-align:center;line-height:1}
+  .pop .price small{font-size:.35em;font-weight:700}
+  .pop .meta{display:flex;justify-content:space-between;color:#3d3127;font-weight:700}
+  .size-card{width:364px;height:220px} .size-card .band{font-size:14px;padding:3px} .size-card .catch{font-size:18px;padding:4px 10px 0} .size-card .name{font-size:20px} .size-card .price{font-size:48px} .size-card .meta{font-size:12px;padding:2px 10px 6px}
+  .size-a6{width:420px;height:296px} .size-a6 .band{font-size:16px;padding:4px} .size-a6 .catch{font-size:24px;padding:6px 12px 0} .size-a6 .name{font-size:26px} .size-a6 .price{font-size:64px} .size-a6 .meta{font-size:14px;padding:2px 14px 8px}
+  .size-a5{width:592px;height:420px} .size-a5 .band{font-size:20px;padding:6px} .size-a5 .catch{font-size:34px;padding:10px 16px 0} .size-a5 .name{font-size:36px} .size-a5 .price{font-size:96px} .size-a5 .meta{font-size:18px;padding:4px 18px 12px}
+  .choice{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+  .imgOut img{max-width:100%;border:2px solid var(--line);border-radius:8px;background:#fff}
+  ul.check{list-style:none;padding:0;margin:0}
+  ul.check li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+  ul.check input{width:26px;height:26px;margin-top:4px;flex:0 0 auto}
+  .printCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .pcard{border:2px dashed #b9a988;border-radius:12px;background:#fff;padding:16px;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
+  .pcard .k{font-size:14px;color:var(--sub);font-weight:700}
+  .pcard .v{font-size:24px;font-weight:800}
+  [hidden]{display:none!important}
+  @media (max-width:600px){ .size-a5{transform:scale(.6);transform-origin:top left;margin-bottom:-168px;margin-right:-236px} }
+</style>
+</head>
+<body>
+<main>
+  <h1>POPづくりカード</h1>
+  <p class="lead">カードを選ぶだけで、生成AIに貼る質問文ができます。価格・産地・期限は、かならず指示書から写します。</p>
+
+  <div class="tabs" role="tablist" aria-label="画面の切りかえ">
+    <button role="tab" aria-selected="true" data-view="make" id="t-make">POPをつくる</button>
+    <button role="tab" aria-selected="false" data-view="check" id="t-check">確認チェック</button>
+    <button role="tab" aria-selected="false" data-view="cards" id="t-cards">紙のカード</button>
+  </div>
+
+  <div id="v-make">
+    <section class="step" aria-labelledby="h1s">
+      <h2 id="h1s"><span class="num" aria-hidden="true">1</span>情報カード（指示書から写す）</h2>
+      <p class="hint">指示書を見ながら、1文字ずつ写します。ここはAIに書かせません。</p>
+      <div class="grid2">
+        <label class="field">商品名<input type="text" id="f-name" value="朝どり枝豆"></label>
+        <label class="field">量・単位<input type="text" id="f-unit" value="1袋 200g"></label>
+        <label class="field">価格（数字だけ）<input type="text" id="f-price" inputmode="numeric" value="300"></label>
+        <label class="field">産地<input type="text" id="f-origin" value="広島県産"></label>
+        <label class="field">期限・特売の日（なければ空らん）<input type="text" id="f-until" value=""></label>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="h2s">
+      <h2 id="h2s"><span class="num" aria-hidden="true">2</span>気持ちのカードを選ぶ</h2>
+      <p class="hint">それぞれ1枚ずつ選びます。選ぶと、下に質問文ができます。</p>
+      <div class="group"><h3>だれに</h3><div class="cards" id="g-who"></div></div>
+      <div class="group"><h3>どんな気持ちを伝える</h3><div class="cards" id="g-feel"></div></div>
+      <div class="group"><h3>一言の形</h3><div class="cards" id="g-form"></div></div>
+      <pre class="prompt" id="prompt" aria-live="polite"></pre>
+      <div class="row">
+        <button class="btn" id="copy">質問文をコピーする</button>
+        <span class="status" id="copyStatus" role="status"></span>
+      </div>
+      <p class="hint" style="margin-top:12px">生成AIを使えないときは、見本から選びます。</p>
+      <div class="samples" id="samples"></div>
+    </section>
+
+    <section class="step" aria-labelledby="h3s">
+      <h2 id="h3s"><span class="num" aria-hidden="true">3</span>一言を入れる</h2>
+      <p class="hint">AIの案から1つ選んで貼りつけるか、見本をおします。言いすぎの言葉がないか、自動で調べます。</p>
+      <label class="field">一言<input type="text" id="f-catch" value="とれたての、あまい香り"></label>
+      <div id="ngBox" class="alert ok" role="status">言いすぎの言葉は見つかりませんでした。</div>
+    </section>
+
+    <section class="step" aria-labelledby="h4s">
+      <h2 id="h4s"><span class="num" aria-hidden="true">4</span>テンプレートで仕上げる</h2>
+      <div class="choice" role="group" aria-label="大きさ">
+        <button class="card" data-size="size-card" aria-pressed="false">プライスカード（91×55mm）</button>
+        <button class="card" data-size="size-a6" aria-pressed="true">A6（はがき）</button>
+        <button class="card" data-size="size-a5" aria-pressed="false">A5</button>
+      </div>
+      <div class="choice" role="group" aria-label="色">
+        <button class="card" data-color="#2f5d3a" aria-pressed="true">みどり</button>
+        <button class="card" data-color="#9a5a12" aria-pressed="false">ちゃいろ</button>
+        <button class="card" data-color="#b3261e" aria-pressed="false">あか（特売）</button>
+        <button class="card" data-color="#1f4e8c" aria-pressed="false">あお</button>
+      </div>
+      <div class="previewWrap">
+        <div class="pop size-a6" id="pop" aria-label="POPの見本">
+          <div class="band" id="p-band">おすすめ</div>
+          <div class="catch" id="p-catch"></div>
+          <div class="name" id="p-name"></div>
+          <div class="price" id="p-price"></div>
+          <div class="meta"><span id="p-origin"></span><span id="p-until"></span></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn" id="toImg">画像にする（印刷用）</button>
+        <span class="hint" style="margin:0">できた画像を長おし（または右クリック）して保存し、印刷します。</span>
+      </div>
+      <div class="imgOut" id="imgOut"></div>
+    </section>
+  </div>
+
+  <div id="v-check" hidden>
+    <section class="step" aria-labelledby="hc">
+      <h2 id="hc">確認チェック</h2>
+      <p class="hint">全部に印がついたら、上司に「確認をお願いします」と報告します。</p>
+      <div id="checks"></div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost" id="resetCheck">印を全部はずす</button><span class="status" id="checkStatus" role="status"></span></div>
+    </section>
+  </div>
+
+  <div id="v-cards" hidden>
+    <section class="step" aria-labelledby="hp">
+      <h2 id="hp">紙のカード（パソコンを使わない日に）</h2>
+      <p class="hint">この画面を印刷するか写真にとり、点線で切って使います。3枚並べると、質問文と同じ中身になります。</p>
+      <div class="printCards" id="printCards"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const WHO = [["家族","家族で食べる人"],["ひとり暮らし","ひとり暮らしの人"],["子ども","子どもがいる家族"],["お年寄り","お年寄り"],["料理好き","料理が好きな人"]];
+  const FEEL = [["とれたて","とれたての新しさ"],["あまい","あまくておいしいこと"],["もちもち","もちもちした食感"],["季節","今の季節だけのおいしさ"],["手づくり","畑から手づくりしていること"],["お買い得","お買い得なこと"]];
+  const FORM = [["短く","10文字くらいの短い一言"],["2行","2行の一言"],["問いかけ","問いかける一言（〜しませんか？）"]];
+  const SAMPLES = {
+    "とれたて":["とれたてを、そのまま","けさ、畑でとりました"],
+    "あまい":["かむほど、あまい","やさしい、あまさ"],
+    "もちもち":["もちもち、ふっくら","おうちパンが、もちもちに"],
+    "季節":["いまだけの、おいしさ","この季節を、食卓に"],
+    "手づくり":["畑から、手づくり","種まきから、ていねいに"],
+    "お買い得":["今日のおすすめ","たっぷり入っています"]
+  };
+  const NG = ["日本一","世界一","No.1","ナンバーワン","一番","必ず","絶対","100%","１００％","最高級","最高","体に効く","効く","治る","やせる","完全","無農薬"];
+  const CHECKS = {
+    "A つくったとき（印刷の前）":["商品名が、指示書と同じ","価格が、指示書と同じ（数字を指でたどる。税込みの表示も確かめる）","産地が、指示書と同じ","期限（いつまでの特売か）が、指示書と同じ","「日本一」「必ず」「体に効く」など、言いすぎの言葉がない","字のまちがいがない（声に出して読む）","1m離れて、価格が読める"],
+    "B 貼るとき":["その商品のすぐ前（または真上）にある","まっすぐで、お客さんから文字が正しい向きに見える","商品や価格の表示をかくしていない","落ちないように、クリップやスタンドで止めた","通路にはみ出していない（ぶつからない）"],
+    "C 点検するとき・外すとき":["期限が過ぎたPOPはない（あれば外す）","売り切れた商品のPOPはない（あれば上司に聞く）","汚れ・やぶれ・かたむきがない（あれば直すか、作り直す）","商品とPOPがずれていない（品出しで入れかわっていないか）","外したPOPは、決められた場所に置いた"]
+  };
+  const ICON = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>';
+  const state = {who:0, feel:0, form:0, size:"size-a6", color:"#2f5d3a"};
+  const $ = id => document.getElementById(id);
+
+  function makeCards(el, list, key, cls){
+    list.forEach(([label], i) => {
+      const b = document.createElement("button");
+      b.className = "card " + (cls||"");
+      b.type = "button";
+      b.innerHTML = ICON + "<span></span>";
+      b.querySelector("span").textContent = label;
+      b.setAttribute("aria-pressed", i === state[key] ? "true" : "false");
+      b.addEventListener("click", () => {
+        state[key] = i;
+        el.querySelectorAll("button").forEach((x, j) => x.setAttribute("aria-pressed", j === i ? "true" : "false"));
+        update();
+      });
+      el.appendChild(b);
+    });
+  }
+  makeCards($("g-who"), WHO, "who");
+  makeCards($("g-feel"), FEEL, "feel", "feel");
+  makeCards($("g-form"), FORM, "form");
+
+  function v(id){ return $(id).value.trim(); }
+
+  function buildPrompt(){
+    const name = v("f-name") || "（商品名）";
+    return [
+      "【目的】売場のPOPにのせる一言を考えてください。",
+      "【商品】" + name + "（" + (v("f-unit") || "量") + "）",
+      "【だれに】" + WHO[state.who][1] + "に向けて",
+      "【伝えたいこと】" + FEEL[state.feel][1],
+      "【形】" + FORM[state.form][1] + "。案を3つ。",
+      "【守ること】価格・産地・日付・人の名前は書かない。「日本一」「必ず」「体に効く」など、言いすぎの言葉は使わない。むずかしい漢字は使わない。"
+    ].join("\n");
+  }
+
+  function renderSamples(){
+    const box = $("samples"); box.innerHTML = "";
+    (SAMPLES[FEEL[state.feel][0]] || []).forEach(t => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = t;
+      b.addEventListener("click", () => { $("f-catch").value = t; update(); $("f-catch").focus(); });
+      box.appendChild(b);
+    });
+  }
+
+  function checkNG(text){
+    return NG.filter(w => text.includes(w));
+  }
+
+  function update(){
+    $("prompt").textContent = buildPrompt();
+    renderSamples();
+    const c = v("f-catch");
+    const hits = checkNG(c);
+    const box = $("ngBox");
+    if(hits.length){ box.className = "alert ng"; box.textContent = "言いすぎかもしれない言葉：「" + hits.join("」「") + "」。ちがう言い方にしましょう。"; }
+    else if(!c){ box.className = "alert ng"; box.textContent = "一言が空らんです。"; }
+    else { box.className = "alert ok"; box.textContent = "言いすぎの言葉は見つかりませんでした。最後は人が確かめます。"; }
+    const pop = $("pop");
+    pop.className = "pop " + state.size;
+    pop.style.setProperty("--popc", state.color);
+    $("p-band").textContent = state.color === "#b3261e" ? "本日の特売" : "おすすめ";
+    $("p-catch").textContent = c;
+    $("p-name").textContent = v("f-name") + (v("f-unit") ? "　" + v("f-unit") : "");
+    const p = v("f-price").replace(/[^0-9０-９,]/g, "");
+    $("p-price").innerHTML = "";
+    if(p){ $("p-price").append(p); const s = document.createElement("small"); s.textContent = "円（税込）"; $("p-price").append(s); }
+    $("p-origin").textContent = v("f-origin");
+    $("p-until").textContent = v("f-until");
+  }
+  ["f-name","f-unit","f-price","f-origin","f-until","f-catch"].forEach(id => $(id).addEventListener("input", update));
+
+  document.querySelectorAll("[data-size]").forEach(b => b.addEventListener("click", () => {
+    state.size = b.dataset.size;
+    document.querySelectorAll("[data-size]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    update();
+  }));
+  document.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => {
+    state.color = b.dataset.color;
+    document.querySelectorAll("[data-color]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    update();
+  }));
+
+  $("copy").addEventListener("click", async () => {
+    const t = buildPrompt();
+    try { await navigator.clipboard.writeText(t); $("copyStatus").textContent = "コピーしました。生成AIに貼りつけましょう。"; }
+    catch(e){
+      const r = document.createRange(); r.selectNodeContents($("prompt"));
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      $("copyStatus").textContent = "質問文を選びました。コピーしてください。";
+    }
+  });
+
+  // POP → 画像（印刷用・約300dpi相当の大きさ）
+  $("toImg").addEventListener("click", () => {
+    const mm = {"size-card":[91,55],"size-a6":[148,105],"size-a5":[210,148]}[state.size];
+    const W = Math.round(mm[0] * 11.8), H = Math.round(mm[1] * 11.8);
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d"); const col = state.color;
+    const font = '"Hiragino Sans","Noto Sans JP","Noto Sans CJK JP","Yu Gothic",sans-serif';
+    g.fillStyle = "#fff"; g.fillRect(0,0,W,H);
+    const bw = Math.round(H*0.02); g.lineWidth = bw; g.strokeStyle = col; g.strokeRect(bw/2,bw/2,W-bw,H-bw);
+    const bandH = Math.round(H*0.12); g.fillStyle = col; g.fillRect(0,0,W,bandH);
+    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.font = "700 " + Math.round(bandH*0.6) + "px " + font; g.fillText($("p-band").textContent, W/2, bandH/2);
+    function fit(text, maxW, size, weight){ let s = size; g.font = weight + " " + s + "px " + font; while(g.measureText(text).width > maxW && s > 10){ s -= 2; g.font = weight + " " + s + "px " + font; } return s; }
+    const c = v("f-catch"); g.fillStyle = col; fit(c, W*0.9, Math.round(H*0.11), 800); g.fillText(c, W/2, H*0.27);
+    const nm = $("p-name").textContent; g.fillStyle = "#1d1712"; fit(nm, W*0.9, Math.round(H*0.1), 800); g.fillText(nm, W/2, H*0.43);
+    const p = v("f-price").replace(/[^0-9０-９,]/g, "");
+    if(p){ const ps = fit(p, W*0.6, Math.round(H*0.27), 900); const unit = "円（税込）"; g.font = "700 " + Math.round(ps*0.32) + "px " + font; const uw = g.measureText(unit).width; g.font = "900 " + ps + "px " + font; const pw = g.measureText(p).width; const x0 = (W - pw - uw)/2; g.textAlign = "left"; g.fillText(p, x0, H*0.66); g.font = "700 " + Math.round(ps*0.32) + "px " + font; g.fillText(unit, x0 + pw + 6, H*0.66 + ps*0.25); g.textAlign = "center"; }
+    g.fillStyle = "#3d3127"; g.font = "700 " + Math.round(H*0.06) + "px " + font; g.textBaseline = "alphabetic";
+    g.textAlign = "left"; g.fillText(v("f-origin"), W*0.05, H*0.92); g.textAlign = "right"; g.fillText(v("f-until"), W*0.95, H*0.92);
+    cv.toBlob(b => { if(!b) return; const img = new Image(); img.alt = "印刷用のPOP画像"; img.src = URL.createObjectURL(b); const out = $("imgOut"); out.innerHTML = ""; out.appendChild(img); });
+  });
+
+  // 確認チェック
+  const checksEl = $("checks"); let total = 0;
+  Object.entries(CHECKS).forEach(([head, items]) => {
+    const h = document.createElement("h3"); h.textContent = head; h.style.margin = "16px 0 4px"; checksEl.appendChild(h);
+    const ul = document.createElement("ul"); ul.className = "check";
+    items.forEach((t, i) => { total++; const li = document.createElement("li"); const id = "c" + total; li.innerHTML = '<input type="checkbox" id="' + id + '"><label for="' + id + '"></label>'; li.querySelector("label").textContent = t; ul.appendChild(li); });
+    checksEl.appendChild(ul);
+  });
+  function checkCount(){ const n = checksEl.querySelectorAll("input:checked").length; $("checkStatus").textContent = n === total ? "全部に印がつきました。上司に「確認をお願いします」と報告しましょう。" : n + " / " + total; }
+  checksEl.addEventListener("change", checkCount); checkCount();
+  $("resetCheck").addEventListener("click", () => { checksEl.querySelectorAll("input").forEach(x => x.checked = false); checkCount(); });
+
+  // 紙のカード
+  const pc = $("printCards");
+  [["だれに", WHO], ["気持ち", FEEL], ["一言の形", FORM]].forEach(([k, list]) => list.forEach(([label]) => {
+    const d = document.createElement("div"); d.className = "pcard";
+    d.innerHTML = '<span class="k"></span><span class="v"></span>'; d.querySelector(".k").textContent = k; d.querySelector(".v").textContent = label; pc.appendChild(d);
+  }));
+
+  // タブ
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+    ["make","check","cards"].forEach(n => $("v-" + n).hidden = n !== b.dataset.view);
+  }));
+
+  update();
+})();
+</script>
+</body>
+</html>
