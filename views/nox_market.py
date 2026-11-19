@@ -6,7 +6,7 @@ import genai_core as gc
 import nox_core as nx
 import ui
 
-ui.header("nox_market", "売るのは農産物ではなく、農産物が生まれる風景と価値観です。まず自分の畑で、風景を小さな定期便と体験に包み、"
+ui.header("nox_market", image="static/nox_market_scene.svg", lead="売るのは農産物ではなく、農産物が生まれる風景と価値観です。まず自分の畑で、風景を小さな定期便と体験に包み、"
           "ファンと直接つながる。その型を、農業法人・農業関連企業へのマーケティング支援（X）にも使います。")
 
 st.subheader("① 風景をパッケージにする")

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" role="img" aria-labelledby="t d">
+  <title id="t">農：輪作と時間の予算</title>
+  <desc id="d">一年の輪の中に、区画Aと区画Bが麦と大豆を入れかえる畑。輪の外側では小麦と大豆の作業の山がずれ、時計と教科書が X の時間を示す。</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbf6ee"/><stop offset="1" stop-color="#f1eadf"/></linearGradient>
+    <marker id="ab" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#2a78d6"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#eb6834"/></marker>
+  </defs>
+  <rect width="480" height="360" rx="18" fill="url(#bg)"/>
+
+  <!-- 一年の輪：小麦（11〜6月）＝金、大豆（6〜10月）＝緑 -->
+  <g transform="translate(240 182)">
+    <circle r="138" fill="#ffffff" stroke="#e3dccf" stroke-width="2"/>
+    <!-- 小麦の弧：約 -90°+... 簡略化して 300°→150° 時計回り -->
+    <path d="M0 -126 A126 126 0 1 1 -109 63" fill="none" stroke="#e8c46a" stroke-width="16" stroke-linecap="round" opacity="0.9"/>
+    <path d="M-109 63 A126 126 0 0 1 -22 -124" fill="none" stroke="#7fb06e" stroke-width="16" stroke-linecap="round" opacity="0.9"/>
+    <!-- 月の目盛り -->
+    <g stroke="#b9b1a3" stroke-width="2">
+      <line x1="0" y1="-112" x2="0" y2="-104"/><line x1="56" y1="-97" x2="52" y2="-90"/><line x1="97" y1="-56" x2="90" y2="-52"/>
+      <line x1="112" y1="0" x2="104" y2="0"/><line x1="97" y1="56" x2="90" y2="52"/><line x1="56" y1="97" x2="52" y2="90"/>
+      <line x1="0" y1="112" x2="0" y2="104"/><line x1="-56" y1="97" x2="-52" y2="90"/><line x1="-97" y1="56" x2="-90" y2="52"/>
+      <line x1="-112" y1="0" x2="-104" y2="0"/><line x1="-97" y1="-56" x2="-90" y2="-52"/><line x1="-56" y1="-97" x2="-52" y2="-90"/>
+    </g>
+
+    <!-- 中央の畑：区画A（麦）と区画B（大豆） -->
+    <g transform="skewX(-12)">
+      <rect x="-70" y="-62" width="66" height="112" rx="8" fill="#f2d98f" stroke="#c99a3a" stroke-width="2"/>
+      <rect x="6" y="-62" width="66" height="112" rx="8" fill="#b9d9a8" stroke="#5f9651" stroke-width="2"/>
+      <g stroke="#c99a3a" stroke-width="2" stroke-linecap="round">
+        <path d="M-58 40 V-6 M-46 40 V-10 M-34 40 V-4 M-22 40 V-8"/>
+      </g>
+      <g fill="#d9a744">
+        <ellipse cx="-58" cy="-10" rx="3" ry="8"/><ellipse cx="-46" cy="-14" rx="3" ry="8"/><ellipse cx="-34" cy="-8" rx="3" ry="8"/><ellipse cx="-22" cy="-12" rx="3" ry="8"/>
+        <ellipse cx="-52" cy="-40" rx="3" ry="8"/><ellipse cx="-38" cy="-44" rx="3" ry="8"/><ellipse cx="-24" cy="-40" rx="3" ry="8"/>
+      </g>
+      <g fill="#5f9651">
+        <circle cx="22" cy="-40" r="7"/><circle cx="42" cy="-44" r="7"/><circle cx="60" cy="-38" r="6"/>
+        <circle cx="24" cy="-8" r="7"/><circle cx="44" cy="-12" r="7"/><circle cx="60" cy="-6" r="6"/>
+        <circle cx="22" cy="26" r="7"/><circle cx="42" cy="22" r="7"/><circle cx="60" cy="28" r="6"/>
+      </g>
+    </g>
+    <!-- A ⇄ B 入れかえ矢印 -->
+    <path d="M-40 -78 Q0 -104 40 -78" fill="none" stroke="#2a78d6" stroke-width="3" marker-end="url(#ab)"/>
+    <path d="M28 70 Q-8 94 -46 70" fill="none" stroke="#eb6834" stroke-width="3" marker-end="url(#ao)"/>
+    <text x="-56" y="-66" font-family="sans-serif" font-size="14" font-weight="700" fill="#8a6420">A</text>
+    <text x="30" y="-66" font-family="sans-serif" font-size="14" font-weight="700" fill="#3f6e35">B</text>
+  </g>
+
+  <!-- 左上：作業の山がずれる小さな棒グラフ -->
+  <g transform="translate(22 24)">
+    <rect width="96" height="64" rx="10" fill="#ffffff" stroke="#e3dccf"/>
+    <g>
+      <rect x="12" y="34" width="8" height="20" fill="#e8c46a"/><rect x="24" y="18" width="8" height="36" fill="#e8c46a"/><rect x="36" y="40" width="8" height="14" fill="#e8c46a"/>
+      <rect x="50" y="42" width="8" height="12" fill="#7fb06e"/><rect x="62" y="22" width="8" height="32" fill="#7fb06e"/><rect x="74" y="36" width="8" height="18" fill="#7fb06e"/>
+      <line x1="10" y1="54" x2="86" y2="54" stroke="#9aa5b4" stroke-width="1.5"/>
+    </g>
+  </g>
+
+  <!-- 右上：時計（時間の予算） -->
+  <g transform="translate(424 60)">
+    <circle r="32" fill="#ffffff" stroke="#2a78d6" stroke-width="3"/>
+    <path d="M0 0 L0 -32 A32 32 0 0 1 28 16 Z" fill="#e9f1fc"/>
+    <g stroke="#14171d" stroke-width="3" stroke-linecap="round"><line x1="0" y1="0" x2="0" y2="-20"/><line x1="0" y1="0" x2="14" y2="8"/></g>
+    <circle r="3" fill="#14171d"/>
+  </g>
+
+  <!-- 右下：X の時間（教科書とノートPC） -->
+  <g transform="translate(392 286)">
+    <rect x="0" y="10" width="60" height="38" rx="4" fill="#fde9df" stroke="#eb6834" stroke-width="2"/>
+    <line x1="30" y1="10" x2="30" y2="48" stroke="#eb6834" stroke-width="2"/>
+    <path d="M8 22 h16 M8 30 h16 M36 22 h16 M36 30 h12" stroke="#eb6834" stroke-width="1.5" opacity="0.6"/>
+  </g>
+  <!-- 左下：余白を示す空白の小さなカレンダー -->
+  <g transform="translate(26 280)">
+    <rect width="62" height="56" rx="8" fill="#ffffff" stroke="#2a78d6" stroke-width="2"/>
+    <rect width="62" height="14" rx="6" fill="#2a78d6"/>
+    <g fill="#e9f1fc"><rect x="8" y="22" width="12" height="10" rx="2"/><rect x="25" y="22" width="12" height="10" rx="2"/><rect x="42" y="22" width="12" height="10" rx="2"/>
+      <rect x="8" y="38" width="12" height="10" rx="2"/><rect x="42" y="38" width="12" height="10" rx="2"/></g>
+    <rect x="25" y="38" width="12" height="10" rx="2" fill="#fde9df" stroke="#eb6834"/>
+  </g>
+</svg>

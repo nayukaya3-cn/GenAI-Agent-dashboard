@@ -6,7 +6,7 @@ import streamlit as st
 import nox_core as nx
 import ui
 
-ui.header("nox_portfolio", "収入の柱を組み合わせ、天候の良い年・悪い年、契約がとれた年・とれなかった年を1万年分ためしに引きます。"
+ui.header("nox_portfolio", image="static/nox_portfolio_scene.svg", lead="収入の柱を組み合わせ、天候の良い年・悪い年、契約がとれた年・とれなかった年を1万年分ためしに引きます。"
           "見るのは平均ではなく「悪い年（下位5%）」の手取りです。初期の数字はすべて架空・仮置きです。")
 
 st.subheader("収入の柱")
