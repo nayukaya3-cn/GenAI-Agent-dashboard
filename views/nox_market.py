@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 
 import genai_core as gc
+import insta_ui
 import nox_core as nx
 import ui
 
@@ -87,4 +88,6 @@ st.dataframe(pd.DataFrame(nx.SERVICE, columns=["段", "支援の中身", "使う
 st.caption("支援先の顧客名簿・売上・従業員の情報は、生成AIに貼りません（道具箱 04 守る）。定期便の受付〜発送は、道具箱 06 任せる に「定期便（農＋X）」の流れを入れてあります。")
 ui.link("agent", "定期便の流れを工程に分ける（道具箱 06 任せる）", "🛠️")
 ui.link("measure", "効いた発信・商品を数で比べる（道具箱 07 確かめる）", "📊")
+
+insta_ui.section(scene, farm_name, month)
 ui.contact()

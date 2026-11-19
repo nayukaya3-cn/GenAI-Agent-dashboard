@@ -47,6 +47,7 @@ URL は `social.py` で一括管理しています（姉妹サイト「スマー
 ## 方針
 
 - **生成AIを呼び出しません。** APIキーを持たず、入力を外へ送りません。組み立てた文は、利用者が自分で貼ります。
+  例外は「X 売る」の ⑥ Instagram 投稿だけです。Secrets に設定した合言葉を入れた本人が投稿ボタンを押したときだけ、本文と画像を Instagram に送ります。
 - **初期データはすべて架空です。** 作業時間・単価・確率も仮置きで、収入のシミュレーションは予測ではなく考えるための道具です。 人は「Aさん」などの仮名。障害の種類や診断名を書く欄は作っていません。
 - **判定の境目・辞書・点数は仮置きです。** 現場の支援者が `genai_core.py` を書きかえて使います。
 - **点検は見落とします。** 「見つからなかった」は「安全」ではありません。最後に確かめるのは人です。
@@ -63,6 +64,7 @@ streamlit run app.py
 ```bash
 python nox_core.py       # 農＋X の計算部品の自己チェック
 python genai_core.py     # 道具箱の計算部品の自己チェック
+python insta_core.py     # Instagram 投稿部品の自己チェック
 pip install pytest && pytest -q   # 部品のテスト＋全ページの描画テスト
 ```
 
@@ -72,11 +74,33 @@ pip install pytest && pytest -q   # 部品のテスト＋全ページの描画�
 
 1. このリポジトリを GitHub に push する
 2. https://share.streamlit.io で「Create app」→ リポジトリとブランチ `main`、Main file path に `app.py` を指定する
-3. Secrets の設定は不要です（外部サービスを呼びません）
+3. Secrets は、Instagram 投稿を使うときだけ設定します（使わなければ不要。そのときは本文と画像をダウンロードして手で投稿する道だけが出ます）
+
+### Instagram 投稿の設定（「X 売る」⑥）
+
+Instagram API with Instagram Login（`graph.instagram.com`）の2段階投稿（`/media` → `/media_publish`）を使います。
+
+1. Instagram をプロアカウント（ビジネス／クリエイター）にする
+2. Meta for Developers でアプリをつくり「Instagram ログインによるAPI設定」を追加、`instagram_business_basic`・`instagram_business_content_publish` で自分のアカウントをつなぎ、長期アクセストークンを発行する
+3. Community Cloud の App settings → Secrets に貼る（ひな形：`.streamlit/secrets.toml.example`）
+
+```toml
+[instagram]
+access_token    = "IGAA..."
+passcode        = "自分だけが知る合言葉"
+public_base_url = "https://genai-agent-dashboard-e5xwcfhek9efndwczfb9k9.streamlit.app"
+```
+
+- 公開アプリなので、投稿ボタンは合言葉を知っている人しか押せません（まちがいは5回まで）。
+- アップロードした写真は、位置情報（EXIF）を消し、縦横比を 4:5〜1.91:1 に合わせて `static/ig/` に一時的に置き、`/app/static/ig/…` の公開URLを Instagram に渡します（`server.enableStaticServing = true`）。投稿後に消します。
+- 長期トークンは60日で切れます。期限前に `refresh_access_token` で延ばし、Secrets を貼りかえてください。
+- 24時間に公開できるのは50件までです。
 
 ## 構成
 
 ```
+insta_core.py     Instagram 投稿の部品（本文・画像の整形、API呼び出し。Streamlit 非依存）
+insta_ui.py       「X 売る」⑥ Instagram に投稿する の画面
 app.py            入口（st.navigation で「農＋X」5ページと「道具箱」7ページを束ねる）
 nox_core.py       農＋X のデータと計算（Streamlit 非依存）
 genai_core.py     道具箱のデータと計算（Streamlit 非依存）

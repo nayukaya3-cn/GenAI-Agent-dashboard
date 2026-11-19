@@ -49,7 +49,7 @@ def sidebar_note() -> None:
         st.caption("つくった人の活動")
         sn.buttons("で活動内容を見る", stacked=True)
         st.divider()
-        st.caption("この画面は生成AIを呼び出さず、入力を外へ送りません。初期表示の人・数字はすべて架空です。")
+        st.caption("この画面は生成AIを呼び出さず、入力を外へ送りません（例外：「X 売る」の Instagram 投稿は、合言葉を入れた本人が投稿ボタンを押したときだけ Instagram に送ります）。初期表示の人・数字はすべて架空です。")
         st.caption("もとのページ："
                    "[スマートパン屋農家](https://smart-bakery-farm.streamlit.app/)・"
                    "[科学と人間生活](https://science-and-our-daily-life-20261106.streamlit.app/)・"

@@ -4,5 +4,8 @@ backgroundColor = "#f3f5f8"
 secondaryBackgroundColor = "#fcfcfb"
 textColor = "#14171d"
 
+[server]
+enableStaticServing = true   # static/ を /app/static/ で公開（Instagram が投稿画像を取りにくるため）
+
 [browser]
 gatherUsageStats = false
