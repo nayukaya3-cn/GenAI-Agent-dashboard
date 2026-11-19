@@ -4,7 +4,7 @@ import streamlit as st
 import nox_core as nx
 import ui
 
-ui.header("nox_home", ui.CORE)
+ui.header("nox_home", ui.CORE, image="static/nox_home_scene.svg")
 
 with st.container(border=True):
     st.markdown("#### 届けるのは、たとえばこんな朝")
