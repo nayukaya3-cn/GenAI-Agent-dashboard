@@ -17,16 +17,23 @@ CORE = ("農産物そのもの（モノ）を主役にせず、その農産物�
         "第一歩は、畑の風景・食卓の風景をパッケージにし、小さな定期便や体験イベントからファンと直接つながること。")
 
 
-def header(key: str, lead: str) -> None:
+def header(key: str, lead: str, image: str | None = None) -> None:
+    """見出し。image（SVGなどのパス）を渡すと、右上の余白にイラストを置く"""
     nox = next((s for s in NOX if s[0] == key), None)
     if nox:
         _, no, verb, sub = nox
-        st.caption(f"農＋X ライフスタイル ／ {no}")
+        cap = f"農＋X ライフスタイル ／ {no}"
     else:
         _, no, verb, sub = next(s for s in STEPS if s[0] == key)
-        st.caption(f"生成AIの道具箱 ／ {no} ／ 07")
-    st.title(f"{verb}：{sub}")
-    st.write(lead)
+        cap = f"生成AIの道具箱 ／ {no} ／ 07"
+    left, right = st.columns([3, 2], vertical_alignment="center") if image else (st.container(), None)
+    with left:
+        st.caption(cap)
+        st.title(f"{verb}：{sub}")
+        st.write(lead)
+    if right is not None:
+        with right:
+            st.image(image, width="stretch")
     st.divider()
 
 
