@@ -2,6 +2,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+import diary_ui
 import genai_core as gc
 import insta_ui
 import nox_core as nx
@@ -86,8 +87,10 @@ st.write("自分の畑で試した①〜④の型を、支援先の法人に持�
 st.dataframe(pd.DataFrame(nx.SERVICE, columns=["段", "支援の中身", "使う道具", "成果物", "目安の時間"]),
              hide_index=True, use_container_width=True)
 st.caption("支援先の顧客名簿・売上・従業員の情報は、生成AIに貼りません（道具箱 04 守る）。定期便の受付〜発送は、道具箱 06 任せる に「定期便（農＋X）」の流れを入れてあります。")
+st.caption("「1 診る」で支援先の作業日誌や、お客さんの感想を読むときは、下の ⑥ を使います（困りごと・不満の芽を数えてから、原文で確かめる）。")
 ui.link("agent", "定期便の流れを工程に分ける（道具箱 06 任せる）", "🛠️")
 ui.link("measure", "効いた発信・商品を数で比べる（道具箱 07 確かめる）", "📊")
 
+diary_ui.section(farm_name)
 insta_ui.section(scene, farm_name, month)
 ui.contact()
