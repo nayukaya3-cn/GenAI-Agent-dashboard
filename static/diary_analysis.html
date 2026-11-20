@@ -1,0 +1,952 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>作業日誌 困りごと分析</title>
+<style>
+/* Layout: field notebook — header + status strip (summary), then one working pane per step of the pipeline: 匿名化 → 集計 → 原文 → コード → モデル. */
+:root{
+  --bg:#f4f5f1; --surface:#fcfcfa; --surface-2:#eceee7; --line:#d9dcd2; --fg:#1a1c18; --fg-2:#52554d; --fg-3:#7a7d73;
+  --accent:#3d6b3a; --accent-soft:#e3ecdf; --accent-ink:#ffffff;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --good-ink:#006300;
+  --seq0:#e6effa; --seq1:#104281; --code-bg:#eef0ea; --mark:rgba(237,161,0,.32); --mask:rgba(42,120,214,.16);
+  --f-display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"IBM Plex Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#121411; --surface:#1a1c19; --surface-2:#232621; --line:#353931; --fg:#eef0ea; --fg-2:#c1c5b9; --fg-3:#8c9086;
+  --accent:#8fc489; --accent-soft:#25331f; --accent-ink:#10200e;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --good-ink:#5fd35f;
+  --seq0:#1d2633; --seq1:#86b6ef; --code-bg:#1f221d; --mark:rgba(201,133,0,.42); --mask:rgba(57,135,229,.26);
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#121411; --surface:#1a1c19; --surface-2:#232621; --line:#353931; --fg:#eef0ea; --fg-2:#c1c5b9; --fg-3:#8c9086;
+  --accent:#8fc489; --accent-soft:#25331f; --accent-ink:#10200e;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --good-ink:#5fd35f;
+  --seq0:#1d2633; --seq1:#86b6ef; --code-bg:#1f221d; --mark:rgba(201,133,0,.42); --mask:rgba(57,135,229,.26);
+  color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.6}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+header.top{padding-bottom:14px;border-bottom:1px solid var(--line)}
+h1{font-family:var(--f-display);font-size:28px;line-height:1.25;margin:0;letter-spacing:.02em;text-wrap:balance}
+.q{margin:6px 0 0;max-width:70ch;color:var(--fg-2);font-size:13.5px}
+.q b{color:var(--fg)}
+.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--fg-3);text-transform:uppercase;font-family:var(--f-mono)}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin-top:14px;padding-bottom:2px}
+nav.tabs button{flex:0 0 auto;border:1px solid transparent;background:none;color:var(--fg-2);font:500 13px var(--f-body);padding:7px 12px;border-radius:999px;cursor:pointer}
+nav.tabs button:hover{background:var(--surface-2);color:var(--fg)}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+nav.tabs .num{font-family:var(--f-mono);font-size:11px;opacity:.75;margin-right:5px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin:16px 0 20px}
+.status>div{background:var(--surface);padding:10px 14px;min-width:0}
+.status .k{font-size:11px;color:var(--fg-3)}
+.status .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status .v small{font-size:12px;font-weight:400;color:var(--fg-2)}
+section.pane{display:none}
+section.pane.on{display:block}
+.grid{display:grid;gap:16px}
+.g-side{grid-template-columns:minmax(260px,340px) minmax(0,1fr)}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:1000px){.g-3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){.g-side,.g-2{grid-template-columns:minmax(0,1fr)}}
+.mt{margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card h2{font-size:15px;margin:0 0 2px}
+.card h3{font-size:13px;margin:14px 0 6px;color:var(--fg-2)}
+.hint{font-size:12px;color:var(--fg-3);margin:0 0 12px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.between{justify-content:space-between;align-items:flex-end}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fg-2);min-width:0}
+select,input[type=number],input[type=text],textarea{font:13px var(--f-body);color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0}
+textarea{font-family:var(--f-mono);font-size:12.5px;width:100%;resize:vertical;line-height:1.55}
+.btn{font:500 12.5px var(--f-body);border:1px solid var(--line);background:var(--surface-2);color:var(--fg);padding:6px 11px;border-radius:6px;cursor:pointer}
+.btn:hover{border-color:var(--fg-3)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);color:var(--fg-2);font:500 12px var(--f-body);padding:6px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--fg-2);white-space:nowrap}
+.pill.good{color:var(--good-ink);border-color:currentColor}
+.pill.warn{color:var(--fg);border-color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,transparent)}
+.pill.crit{color:var(--crit);border-color:currentColor}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+.tbl-wrap.tall{max-height:520px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:500;color:var(--fg-2);background:var(--surface-2);white-space:nowrap;position:sticky;top:0;z-index:1}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td.mono{font-family:var(--f-mono);white-space:nowrap}
+td.nw{white-space:nowrap}
+td.l{text-align:right;color:var(--fg-2);white-space:nowrap}
+td.r{color:var(--fg-2);white-space:nowrap}
+td.kw{white-space:nowrap;text-align:center}
+mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+.masked{background:var(--mask);border-radius:2px;padding:0 2px;font-weight:500}
+pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0;overflow-x:auto;font:12.5px/1.6 var(--f-mono);white-space:pre}
+pre.code .cm{color:var(--fg-3)}
+.codehead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 6px;font-size:12px;color:var(--fg-2)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--surface);min-width:0}
+.kpi .k{font-size:12px;color:var(--fg-2);display:flex;align-items:center;gap:6px}
+.kpi .k i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.kpi .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:12px;color:var(--fg-2);font-weight:400}
+.kpi .s{font-size:11.5px;color:var(--fg-3)}
+.note{font-size:12.5px;color:var(--fg-2);background:var(--surface-2);border-radius:6px;padding:9px 12px;margin:10px 0 0}
+.note b{color:var(--fg)}
+.heat{display:grid;gap:3px;font-size:12px}
+.heat .c{padding:8px 4px;text-align:center;border-radius:3px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.heat .h{font-size:11.5px;color:var(--fg-2);display:flex;align-items:center;padding:2px 4px}
+.heat .hc{justify-content:center;text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--fg-2);margin:4px 0 8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{fill:var(--fg-3);font:11px var(--f-mono)}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .base{stroke:var(--fg-3);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;box-shadow:0 2px 10px rgb(0 0 0 / .12);white-space:nowrap;z-index:3}
+details{border:1px solid var(--line);border-radius:6px;padding:8px 12px;background:var(--surface)}
+details+details{margin-top:8px}
+summary{cursor:pointer;font-weight:500;font-size:13px}
+.checks{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.checks input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:0 0 auto}
+.judge{font-size:12px;padding:3px 6px}
+.judge.y{border-color:var(--crit);color:var(--crit)}
+.judge.n{border-color:var(--fg-3);color:var(--fg-3)}
+.pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:14px}
+@media (max-width:760px){.pipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pipe div{border-top:3px solid var(--line);padding:6px 2px 0;font-size:12px;color:var(--fg-2)}
+.pipe div.on{border-top-color:var(--accent);color:var(--fg)}
+.pipe b{display:block;font-size:12.5px}
+.prob{font-family:var(--f-display);font-size:30px;line-height:1.1}
+.bar{height:12px;background:var(--surface-2);border-radius:3px;overflow:hidden;margin-top:8px}
+.bar>div{height:100%;background:var(--crit);border-radius:0 4px 4px 0}
+
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.ins{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;background:var(--surface);display:flex;flex-direction:column;gap:6px;min-width:0}
+.ins-t{font-size:14.5px;margin:0;color:var(--fg);line-height:1.45;text-wrap:balance}
+.ins-e{font-size:12.5px;margin:0;color:var(--fg-2)}
+.ins-id{font:11.5px var(--f-mono);margin:0;color:var(--fg-3)}
+.ins-c{font-size:12px;margin:0;color:var(--fg-3);border-top:1px dashed var(--line);padding-top:6px}
+footer{margin-top:28px;font-size:12px;color:var(--fg-3)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Small farm · work diary text analysis</div>
+    <h1>作業日誌 困りごと分析</h1>
+    <p class="q">問い：<b>作業上の困りごとが、どの作業や時期に、どのような言葉で書かれているか。</b>「遅れ」「故障」「人手」を含む日誌を数え、該当した原文を読んで確かめます。分析は匿名化した本文だけで行い、処理はすべてこのページの中で完結します（外部への送信なし）。</p>
+    <div class="pipe" id="pipe">
+      <div data-p="data"><b>① 匿名化・前処理</b>氏名を置換／表記をそろえる</div>
+      <div data-p="count"><b>② 数える</b>件数と回数を分ける</div>
+      <div data-p="read"><b>③ 原文を読む</b>否定表現を人が判定</div>
+      <div data-p="insight"><b>④ インサイト</b>気づきと導入の示唆</div>
+      <div data-p="code"><b>⑤ 確かめて報告</b>コード・AIとの照合・方法/結果/限界</div>
+      <div data-p="model"><b>⑥ 発展：判定モデル</b>人の判定から学習</div>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="分析の手順">
+    <button role="tab" data-tab="data" aria-selected="true"><span class="num">1</span>データと匿名化</button>
+    <button role="tab" data-tab="count" aria-selected="false"><span class="num">2</span>件数・作業・時期</button>
+    <button role="tab" data-tab="read" aria-selected="false"><span class="num">3</span>原文を読む</button>
+    <button role="tab" data-tab="insight" aria-selected="false"><span class="num">4</span>インサイト</button>
+    <button role="tab" data-tab="code" aria-selected="false"><span class="num">5</span>確かめて報告</button>
+    <button role="tab" data-tab="model" aria-selected="false"><span class="num">6</span>判定モデル（発展）</button>
+  </nav>
+
+  <div class="status" aria-live="polite">
+    <div><div class="k">日誌</div><div class="v" id="st-n">—</div></div>
+    <div><div class="k">匿名化</div><div class="v" id="st-anon">—</div></div>
+    <div><div class="k">キーワードに一致した日誌</div><div class="v" id="st-hit">—</div></div>
+    <div><div class="k">原文を確認済み</div><div class="v" id="st-rev">—</div></div>
+    <div><div class="k">困りごとと判定</div><div class="v" id="st-yes">—</div></div>
+  </div>
+
+  <!-- 1 データと匿名化 -->
+  <section class="pane on" id="pane-data" role="tabpanel">
+    <div class="grid g-side">
+      <div class="card stack">
+        <div><h2>日誌データ</h2><p class="hint">1行目に見出し（日付・作業・記入者・本文）。タブ区切りかカンマ区切り。最初は<b>架空のサンプル48件</b>が入っています。</p></div>
+        <textarea id="raw" rows="12" spellcheck="false" aria-label="日誌データ"></textarea>
+        <div class="row"><button class="btn pri" id="load">読み込んで匿名化</button><button class="btn" id="load-sample">サンプルに戻す</button></div>
+        <p class="small hint" style="margin:0">貼り付けた生データはこのブラウザのメモリにだけ置かれ、保存も送信もしません。ページを閉じると消えます。</p>
+        <h3 style="margin:4px 0 0">置換する語の辞書</h3>
+        <label class="fld">氏名（1行に1つ）<textarea id="dict-name" rows="4" spellcheck="false"></textarea></label>
+        <label class="fld">取引先（1行に1つ）<textarea id="dict-org" rows="3" spellcheck="false"></textarea></label>
+        <label class="row small" style="gap:6px"><input type="checkbox" id="auto" checked> 辞書にない「〇〇さん」「〇〇青果」、電話番号、メール、URLも自動で置換</label>
+        <label class="row small" style="gap:6px"><input type="checkbox" id="nfkc" checked> 表記をそろえる（NFKC：全角英数→半角など）。元の文は別に残す</label>
+      </div>
+      <div class="stack" style="min-width:0">
+        <div class="card">
+          <div class="row between"><div><h2>匿名化の結果</h2><p class="hint" style="margin:0">青い部分が置換された箇所。この右列（匿名化後）だけが以降の分析に使われます。</p></div>
+            <label class="row small" style="gap:6px"><input type="checkbox" id="show-raw"> 元の文も表示</label></div>
+          <div class="tbl-wrap tall mt" style="margin-top:10px"><table id="anon-table"></table></div>
+        </div>
+        <div class="grid g-2">
+          <div class="card">
+            <h2>置換の記録</h2>
+            <p class="hint">「自動」は機械的に見つけた候補。誤りや取りこぼしがないか確認し、必要なら辞書に足して読み込み直します。</p>
+            <div class="tbl-wrap tall" style="max-height:300px"><table id="anon-log"></table></div>
+            <h3>匿名化後にまだ残っているかもしれないもの</h3>
+            <div id="residual"></div>
+            <h3>前処理（NFKC）で変わった行</h3>
+            <div id="nfkc-log"></div>
+          </div>
+          <div class="card">
+            <h2>外部のAIに入力しないための確認</h2>
+            <p class="hint">チェックはこのブラウザにだけ保存されます。</p>
+            <ul class="checks" id="safe-list"></ul>
+            <details style="margin-top:12px"><summary>Claude Code で生データを読ませない設定例</summary>
+              <p class="small" style="margin:8px 0 6px">プロジェクトの <code>.claude/settings.json</code> に、生データのフォルダへの読み取り拒否を書いておきます（人の注意ではなく設定で防ぐ）。</p>
+              <pre class="code">{
+  "permissions": {
+    "deny": [
+      "Read(./data/raw/**)",
+      "Read(./data/name_map.csv)"
+    ]
+  }
+}</pre></details>
+            <div class="codehead"><span>匿名化済みCSV（分析・共有に使うのはこちら）</span><button class="btn" id="copy-anon">コピー</button></div>
+            <p class="small hint" style="margin:0">ページからのファイル保存はできないので、コピーして <code>diary_anon.csv</code> として保存してください。対応表（置換の記録）は共有しません。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 件数・作業・時期 -->
+  <section class="pane" id="pane-count" role="tabpanel">
+    <div class="card">
+      <div class="row between">
+        <div><h2>キーワードと数え方</h2><p class="hint" style="margin:0">1つの日誌に2回出ても<b>件数は1</b>。出現回数は別に数えます。</p></div>
+        <div class="row">
+          <div><div class="small" style="color:var(--fg-2);margin-bottom:4px">何を数えるか</div>
+            <div class="seg" id="basis"><button aria-pressed="true" data-v="all">一致した日誌</button><button aria-pressed="false" data-v="noneg">否定の可能性を除く</button><button aria-pressed="false" data-v="human">人が困りごとと判定</button></div></div>
+        </div>
+      </div>
+      <div class="grid g-3 mt" id="kw-edit"></div>
+      <div class="row mt" style="margin-top:12px">
+        <label class="row small" style="gap:6px"><input type="checkbox" id="syn"> 言い換え（同義語）も数える</label>
+        <label class="fld" style="flex:1;min-width:260px">否定・解消を示す表現（キーワードの直後12文字、句点まで）<input type="text" id="neg" spellcheck="false"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="row small" style="gap:6px"><input type="checkbox" id="use-ex" checked> 例外を使う</label>
+        <label class="fld" style="flex:1;min-width:260px">「ない」を含むが否定・解消ではない表現（例外。ここに一致した部分は否定として数えない）<input type="text" id="ex" spellcheck="false"></label>
+      </div>
+    </div>
+    <div class="kpis mt" id="kpis"></div>
+    <div class="grid g-2 mt">
+      <div class="card">
+        <h2>月ごとの件数（どの時期に）</h2>
+        <p class="hint" id="month-hint"></p>
+        <div class="legend" id="lg-month"></div>
+        <div class="chart" id="ch-month"></div>
+      </div>
+      <div class="card">
+        <div class="row between"><h2>作業 × キーワード（どの作業で）</h2>
+          <div class="seg" id="heat-mode"><button aria-pressed="true" data-v="n">件数</button><button aria-pressed="false" data-v="r">割合（÷日誌数）</button></div></div>
+        <p class="hint" id="heat-hint">セルは件数。色が濃いほど多い。分母（その作業の日誌数）も並べて読みます。</p>
+        <div class="heat" id="heat"></div>
+      </div>
+    </div>
+    <p class="note"><b>件数は重要度の順位ではありません。</b>書かれやすい作業（毎日書く収穫・出荷など）ほど件数が増えます。作業ごとの日誌数を分母にした割合と、原文の中身をあわせて読みます。</p>
+    <div class="grid g-2 mt">
+      <div class="card">
+        <h2>何を「1つ」と数えるか（区切り方の違い）</h2>
+        <p class="hint">部分文字列一致は「人手不足」の中の「人手」も拾います。語に区切ってから数えると、区切り方しだいで拾わないことがあります。どちらが正しいかではなく、<b>どちらで数えたかを報告に書く</b>ための比較です。</p>
+        <div class="tbl-wrap"><table id="seg-cmp"></table></div>
+        <div class="tbl-wrap mt" style="margin-top:10px"><table id="seg-ex"></table></div>
+      </div>
+      <div class="card">
+        <h2>1件は1人ではない（記入者ごとの件数）</h2>
+        <p class="hint">日誌の件数は「書いた回数」です。よく書く人の困りごとが多く見えることがあります。記入者は匿名化したコードで示します。</p>
+        <div class="tbl-wrap"><table id="writer"></table></div>
+        <p class="small hint" style="margin:8px 0 0">記入者コードは分析の偏りを確かめるためだけに使い、個人の評価には使いません。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 原文を読む -->
+  <section class="pane" id="pane-read" role="tabpanel">
+    <div class="card">
+      <div class="row between">
+        <div><h2>KWIC（キーワードの前後）と人の判定</h2><p class="hint" style="margin:0">機械は「一致」まで。困りごとかどうかは原文を読んで人が決めます。判定はこのブラウザにだけ保存されます（サンプルには判定例が入っています）。</p></div>
+        <div class="row">
+          <label class="fld">キーワード<select id="kw-filter"></select></label>
+          <label class="fld">表示<select id="flag-filter"><option value="all">すべて</option><option value="neg">否定の可能性あり</option><option value="todo">未確認のみ</option><option value="diff">ルールと人の判定がずれる</option></select></label>
+        </div>
+      </div>
+      <div class="tbl-wrap tall mt" style="margin-top:12px"><table id="kwic"></table></div>
+    </div>
+    <div class="grid g-2 mt">
+      <div class="card">
+        <h2>ルールと人の判定のずれ</h2>
+        <p class="hint">否定表現のルールは目安です。ずれた例を見て、ルールの直し方や限界をメモに書きます。</p>
+        <div id="rule-acc"></div>
+        <div class="tbl-wrap"><table id="diff"></table></div>
+      </div>
+      <div class="card">
+        <h2>どのような言葉で書かれているか（共起語）</h2>
+        <p class="hint" id="co-hint"></p>
+        <div class="tbl-wrap"><table id="co"></table></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="row between">
+        <div><h2>キーワードのとなりの語（N-gram）</h2><p class="hint" style="margin:0">語に区切り、キーワードの<b>すぐ前の語・すぐ後の語</b>を順番のまま取り出します。枠は1語ずつずらし、間の語は飛ばしません。<b>読点「、」・句点「。」はまたぎません。</b></p></div>
+        <div class="row">
+          <label class="fld">何語の組<select id="ng-n"><option value="2">2語（bigram）</option><option value="3">3語（trigram）</option></select></label>
+          <label class="fld">向き<select id="ng-dir"><option value="after">キーワードの後</option><option value="before">キーワードの前</option></select></label>
+        </div>
+      </div>
+      <div class="tbl-wrap mt" style="margin-top:10px"><table id="ngram"></table></div>
+      <p class="small hint" style="margin:8px 0 0">同じ組でも評価が同じとは限りません。「故障 → で → は」の後に「なく」が続くかは、原文を最後まで読んで確かめます。</p>
+    </div>
+  </section>
+
+  <!-- インサイト -->
+  <section class="pane" id="pane-insight" role="tabpanel">
+    <div class="card">
+      <div class="row between">
+        <div><h2>今日の要点</h2><p class="hint" style="margin:0">データから自動で拾った「気づき」を、根拠の強さの目安が高い順に並べます。どれも<b>仮説</b>です。IDの原文を読んで確かめてから研究メモに使います。</p></div>
+        <div class="row">
+          <label class="fld">数える基準<select id="ins-basis"><option value="human">人が困りごとと判定</option><option value="noneg">否定の可能性を除く</option><option value="all">一致した日誌</option></select></label>
+          <button class="btn" id="ins-copy">Markdownでコピー</button>
+        </div>
+      </div>
+      <div class="ins-grid mt" id="ins-cards"></div>
+    </div>
+
+    <div class="grid g-2 mt">
+      <div class="card">
+        <div class="row between"><div><h2>どの作業で多いか（ベイズ推定）</h2><p class="hint" style="margin:0">作業ごとの「困りごと日誌の割合」を、一様な事前分布 Beta(1,1) から推定。線は90%信用区間、縦の点線は全体の割合。</p></div>
+          <label class="fld">対象<select id="ins-target"></select></label></div>
+        <div class="chart mt" id="ch-forest"></div>
+        <p class="small hint" style="margin:8px 0 0">件数が少ない作業ほど区間が広くなります。「P(他より高い)」は、その作業の割合がそれ以外の作業をまとめた割合を上回る事後確率です。</p>
+      </div>
+      <div class="card">
+        <h2>いつ起きたか（タイムライン）</h2>
+        <p class="hint">塗りの点＝数える基準に入った日誌、白抜き＝一致したが基準から外れた日誌（否定・該当せずなど）。</p>
+        <div class="legend" id="lg-tl"></div>
+        <div class="chart" id="ch-tl"></div>
+      </div>
+    </div>
+
+    <div class="grid g-2 mt">
+      <div class="card">
+        <h2>困りごとの連鎖</h2>
+        <p class="hint">同じ日誌に一緒に書かれる組み合わせと、「Aの後、数日以内にBが書かれるか」を見ます。<b>時間の前後関係であって、因果ではありません。</b>繁忙期のように両方を増やす「共通の原因」がありうるので、Aと同じ月の日誌だけを基準にした比較も並べます。</p>
+        <div class="heat" id="co-mat"></div>
+        <div class="row mt">
+          <label class="fld">A（先）<select id="lag-a"></select></label>
+          <label class="fld">B（後）<select id="lag-b"></select></label>
+          <label class="fld">何日以内<input type="number" id="lag-w" value="7" min="1" max="30" style="width:70px"></label>
+        </div>
+        <div id="lag-out"></div>
+      </div>
+      <div class="card">
+        <h2>故障の対象と復旧までの日数</h2>
+        <p class="hint">「故障」の前に書かれた機械名を拾い、同じ機械について「直った・戻り・再開」が書かれた最初の日までを数えます。</p>
+        <div class="tbl-wrap"><table id="repair"></table></div>
+        <p class="small hint" id="repair-note" style="margin:8px 0 0"></p>
+      </div>
+    </div>
+
+    <div class="card mt">
+      <h2>AIエージェント導入の示唆</h2>
+      <p class="hint">気づきを、エージェントに任せられそうな仕事の候補に結び付けます。<b>送信・発注・シフト確定は人が承認</b>し、エージェントが扱うのは匿名化済み・社内のデータに限る前提です。</p>
+      <div class="tbl-wrap"><table id="agent"></table></div>
+    </div>
+
+    <details class="mt">
+      <summary>同じベイズ推定を Python で確かめる</summary>
+      <div class="codehead"><span>bayes_rate.py</span><button class="btn" data-copy-pre="py-bayes">コピー</button></div>
+      <pre class="code" id="py-bayes"></pre>
+    </details>
+  </section>
+
+  <!-- 4 コードで確かめる -->
+  <section class="pane" id="pane-code" role="tabpanel">
+    <div class="grid g-2">
+      <div class="card">
+        <div class="row between"><h2>手元で再現する Python</h2><label class="fld">キーワード<select id="code-kw"></select></label></div>
+        <p class="hint">匿名化済みCSVだけを読みます。pandas の <code>str.contains</code> が件数、<code>str.count</code> が出現回数。</p>
+        <div class="codehead"><span>analyze.py</span><button class="btn" data-copy-pre="py">コピー</button></div>
+        <pre class="code" id="py"></pre>
+        <div class="codehead"><span>DNCL（共通テスト用プログラム表記）</span><button class="btn" data-copy-pre="dncl">コピー</button></div>
+        <pre class="code" id="dncl"></pre>
+      </div>
+      <div class="card">
+        <h2>トレース表</h2>
+        <p class="hint">変数（件数・回数・要確認）が1件ごとにどう変わるかを追います。</p>
+        <div class="tbl-wrap tall"><table id="trace"></table></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h2>小さな例で検証</h2>
+      <p class="hint">人が先に期待値を決める：["故障", "故障、故障", "故障はなかった"] → 件数3・出現回数4・要確認1。今の設定で実行した結果と照らし合わせます。</p>
+      <div id="verify"></div>
+    </div>
+    <div class="card mt">
+      <h2>生成AIの答えを確かめる（任意）</h2>
+      <p class="hint">同じ日誌・同じ数え方で、生成AIに行ごとの回数を頼み、このページの結果と照らします。<b>合計より先に内訳</b>を比べます（合計だけ合っても、別の行の誤りが打ち消し合っていることがあります）。<b>依頼文を作れるのは架空のサンプルだけ</b>です。実際の日誌は、匿名化済みでも外部のAIに入力しません。</p>
+      <div class="grid g-2">
+        <div class="stack">
+          <div class="row">
+            <label class="fld">キーワード<select id="ai-kw"></select></label>
+            <label class="fld">対象の日誌<select id="ai-scope"><option value="hit">一致した日誌＋一致しない3件</option><option value="all">すべて</option></select></label>
+          </div>
+          <div class="codehead" style="margin-top:0"><span>依頼文（コピーして使う）</span><button class="btn" data-copy="ai-prompt">コピー</button></div>
+          <textarea id="ai-prompt" rows="9" readonly></textarea>
+          <label class="fld">AIの最初の回答を貼り付け（「D002 2」のように ID と回数が1行ずつ並んでいれば読めます）<textarea id="ai-ans" rows="6" spellcheck="false"></textarea></label>
+          <div class="row"><button class="btn" id="ai-demo">教員作成の模擬回答を入れる</button><span class="small hint" style="margin:0">AIを使わない場合は模擬回答を点検します。評価は同じです。</span></div>
+        </div>
+        <div class="stack" style="min-width:0">
+          <div id="ai-cmp"></div>
+          <h3 style="margin:0">利用の記録</h3>
+          <div class="grid g-2" style="gap:8px">
+            <label class="fld">サービス名<input type="text" id="ai-svc" placeholder="例：Gemini、Claude"></label>
+            <label class="fld">表示モデル名（なければ「不明」）<input type="text" id="ai-model" placeholder="不明"></label>
+          </div>
+          <label class="fld">日時<input type="text" id="ai-when"></label>
+          <div class="codehead" style="margin-top:0"><span>記録（依頼文・回答・照合結果を含む）</span><button class="btn" data-copy="ai-log">コピー</button></div>
+          <textarea id="ai-log" rows="7" readonly></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h2>小さな分析報告（方法｜結果｜限界）</h2>
+      <p class="hint">方法＝何を対象に、どう数えたか。結果＝何回・何件か（分母つき）。限界＝どの原文を根拠に、何がまだ言えないか。解釈には匿名化後の ID と原文を根拠として付けます。</p>
+      <textarea id="memo" rows="11"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" data-copy="memo">コピー</button><button class="btn" id="memo-reset">下書きを作り直す</button></div>
+      <h3>提出前に、自分で確認</h3>
+      <ul class="checks" id="report-checks"></ul>
+    </div>
+  </section>
+
+  <!-- 5 判定モデル -->
+  <section class="pane" id="pane-model" role="tabpanel">
+    <div class="grid g-side">
+      <div class="card stack">
+        <div><h2>困りごと判定モデル</h2><p class="hint">③で人が付けた判定を教師データにして、キーワードの前後（前6文字・後ろ10文字）の文字2-gramを特徴に、ナイーブベイズ（ベイズ推論）で「困りごとを含む日誌か」を推定します。学習データに出てこない並びは判断に使いません。モデルはこのページの中で学習・推論します。</p></div>
+        <div class="kpis" id="m-kpis"></div>
+        <label class="fld">新しい日誌（匿名化してから入力）<textarea id="m-in" rows="3" style="font-family:var(--f-body)">コンバインが動かず、稲刈りが半日遅れた。</textarea></label>
+        <div>
+          <div class="small" style="color:var(--fg-2)">困りごとを含む確率</div>
+          <div class="prob" id="m-p">—</div>
+          <div class="bar"><div id="m-bar" style="width:0"></div></div>
+          <p class="small hint" id="m-why" style="margin:8px 0 0"></p>
+        </div>
+      </div>
+      <div class="stack" style="min-width:0">
+        <div class="card">
+          <h2>判定に効いている文字の並び</h2>
+          <p class="hint">log P(2-gram | 困りごと) − log P(2-gram | 該当せず)。学習データに2回以上出たものだけ。</p>
+          <div class="grid g-2"><div class="tbl-wrap"><table id="m-pos"></table></div><div class="tbl-wrap"><table id="m-neg"></table></div></div>
+        </div>
+        <div class="card">
+          <h2>まだ人が確認していない一致日誌への予測</h2>
+          <p class="hint">予測は判定の順番づけに使い、最終判断は原文を読んで人が行います（言い換えを数える設定にすると対象が増えます）。</p>
+          <div class="tbl-wrap"><table id="m-todo"></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>サンプルは架空の作業日誌（小規模農業法人を想定、48件・2026年4〜9月）。氏名・取引先・電話番号も架空です。否定表現の判定、共起語（ブラウザの分かち書き機能 Intl.Segmenter）、判定モデルはいずれも簡易な目安です。生成AIとの照合は架空のサンプルでのみ依頼文を作ります。</footer>
+</div>
+
+<script>
+const SAMPLE = "\u65e5\u4ed8\t\u4f5c\u696d\t\u8a18\u5165\u8005\t\u672c\u6587\n2026-04-03\t\u80b2\u82d7\t\u4f50\u85e4\t\u80b2\u82d7\u30cf\u30a6\u30b9\u306e\u6e29\u5ea6\u7ba1\u7406\u3002\u63db\u6c17\u6247\u304c\u4e00\u6642\u6b62\u307e\u3063\u305f\u304c\u3001\u6545\u969c\u3067\u306f\u306a\u304b\u3063\u305f\u3002\n2026-04-07\t\u80b2\u82d7\t\u9234\u6728\t\u64ad\u7a2e\u4f5c\u696d\u3002\u4e88\u5b9a\u3088\u308a\u534a\u65e5\u9045\u308c\u3002\u4eba\u624b\u304c\u8db3\u308a\u305a\u3001\u9ad8\u6a4b\u3055\u3093\u306b\u5fdc\u63f4\u3092\u983c\u3093\u3060\u3002\n2026-04-10\t\u6a5f\u68b0\u6574\u5099\t\u9ad8\u6a4b\t\u7530\u690d\u6a5f\u306e\u70b9\u691c\u3002\u722a\u306e\u6469\u8017\u3042\u308a\u3001\u90e8\u54c1\u3092\u307f\u306a\u3068\u904b\u9001\u7d4c\u7531\u3067\u53d6\u308a\u5bc4\u305b\u3002\n2026-04-15\t\u80b2\u82d7\t\u5c71\u672c\t\u82d7\u306e\u751f\u80b2\u306f\u9806\u8abf\u3002\u9045\u308c\u306f\u306a\u3044\u3002\n2026-04-18\t\u8349\u5208\u308a\t\u4f50\u85e4\t\u7566\u306e\u8349\u5208\u308a\u3002\u5208\u6255\u6a5f\u306e\u30a8\u30f3\u30b8\u30f3\u304c\u304b\u304b\u308a\u306b\u304f\u3044\u3002\u6545\u969c\u304b\u3082\u3057\u308c\u306a\u3044\u3002\n2026-04-22\t\u80b2\u82d7\t\u9234\u6728\t\u6c34\u3084\u308a\u3002\u7279\u306b\u554f\u984c\u306a\u3057\u3002\n2026-04-25\t\u6a5f\u68b0\u6574\u5099\t\u9ad8\u6a4b\t\u5208\u6255\u6a5f\u3092\u4fee\u7406\u306b\u51fa\u3057\u305f\u3002\u6545\u969c\u7b87\u6240\u306f\u30ad\u30e3\u30d6\u30ec\u30bf\u30fc\u3002\n2026-04-28\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u3072\u304c\u3057\u9752\u679c\u5411\u3051\u306e\u8449\u7269\u3092\u51fa\u8377\u3002\u7bb1\u8a70\u3081\u304c\u9045\u308c\u3001\u96c6\u8377\u306b\u9593\u306b\u5408\u308f\u306a\u304b\u3063\u305f\u3002\n2026-05-02\t\u7530\u690d\u3048\t\u4f50\u85e4\t\u7530\u690d\u3048\u958b\u59cb\u3002\u7530\u690d\u6a5f\u306e\u6545\u969c\u306f\u306a\u304b\u3063\u305f\u3002\n2026-05-06\t\u7530\u690d\u3048\t\u9234\u6728\t\u96e8\u3067\u7530\u690d\u3048\u304c\u9045\u308c\u3002\u9045\u308c\u3001\u9045\u308c\u3067\u4e88\u5b9a\u304c\u8a70\u307e\u3063\u3066\u304d\u305f\u3002\n2026-05-09\t\u7530\u690d\u3048\t\u9ad8\u6a4b\t\u4eba\u624b\u4e0d\u8db3\u3002\u88dc\u690d\u307e\u3067\u624b\u304c\u56de\u3089\u306a\u3044\u3002\n2026-05-13\t\u7530\u690d\u3048\t\u5c71\u672c\t\u7530\u690d\u3048\u5b8c\u4e86\u3002\u4eba\u624b\u306f\u8db3\u308a\u305f\u3002\u4f50\u85e4\u3055\u3093\u306e\u6bb5\u53d6\u308a\u304c\u826f\u304b\u3063\u305f\u3002\n2026-05-17\t\u9632\u9664\t\u4f50\u85e4\t\u9664\u8349\u5264\u6563\u5e03\u3002\u98a8\u304c\u5f37\u304f\u534a\u65e5\u5ef6\u671f\u3002\n2026-05-21\t\u51fa\u8377\u8abf\u6574\t\u9234\u6728\t\u3084\u307e\u3073\u3053\u98df\u54c1\u304b\u3089\u8ffd\u52a0\u6ce8\u6587\u3002\u4eba\u624b\u304c\u8db3\u308a\u305a\u3001\u6b8b\u696d\u3067\u5bfe\u5fdc\u3002\n2026-05-26\t\u8349\u5208\u308a\t\u9ad8\u6a4b\t\u8349\u5208\u308a\u3002\u5208\u6255\u6a5f\u306f\u4fee\u7406\u304b\u3089\u623b\u308a\u3001\u554f\u984c\u306a\u304f\u52d5\u3044\u305f\u3002\n2026-05-30\t\u9632\u9664\t\u5c71\u672c\t\u6563\u5e03\u6a5f\u306e\u30ce\u30ba\u30eb\u304c\u8a70\u307e\u308a\u3001\u4f5c\u696d\u304c\u9045\u308c\u305f\u3002\n2026-06-03\t\u9632\u9664\t\u4f50\u85e4\t\u75c5\u5bb3\u306e\u521d\u671f\u75c7\u72b6\u3002\u65e9\u3081\u306b\u9632\u9664\u3002\u9045\u308c\u306a\u3057\u3002\n2026-06-07\t\u8349\u5208\u308a\t\u9234\u6728\t\u6691\u3055\u3067\u4f5c\u696d\u30da\u30fc\u30b9\u304c\u843d\u3061\u308b\u3002\u4eba\u624b\u304c\u3082\u3046\u4e00\u4eba\u307b\u3057\u3044\u3002\n2026-06-11\t\u51fa\u8377\u8abf\u6574\t\u9ad8\u6a4b\t\u3072\u304c\u3057\u9752\u679c\u3078\u306e\u51fa\u8377\u3002\u9078\u5225\u6a5f\u304c\u6545\u969c\u3057\u3001\u624b\u4f5c\u696d\u3067\u9078\u5225\u30022\u6642\u9593\u9045\u308c\u3002\n2026-06-14\t\u6a5f\u68b0\u6574\u5099\t\u5c71\u672c\t\u9078\u5225\u6a5f\u306e\u6545\u969c\u3092\u696d\u8005\u306b\u9023\u7d61\u3002\u90e8\u54c1\u5f85\u3061\u3002\n2026-06-18\t\u51fa\u8377\u8abf\u6574\t\u4f50\u85e4\t\u9078\u5225\u6a5f\u306f\u307e\u3060\u76f4\u3089\u306a\u3044\u3002\u4eba\u624b\u3067\u5bfe\u5fdc\u3057\u3066\u3044\u308b\u304c\u9650\u754c\u3002\n2026-06-22\t\u8349\u5208\u308a\t\u9234\u6728\t\u6885\u96e8\u306e\u6674\u308c\u9593\u306b\u8349\u5208\u308a\u3002\u9806\u8abf\u3002\n2026-06-26\t\u9632\u9664\t\u9ad8\u6a4b\t\u6563\u5e03\u6a5f\u306e\u30db\u30fc\u30b9\u304c\u7834\u308c\u305f\u3002\u6545\u969c\u3067\u306f\u306a\u304f\u6d88\u8017\u3002\u4ea4\u63db\u3057\u305f\u3002\n2026-06-30\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u9078\u5225\u6a5f\u304c\u76f4\u3063\u305f\u3002\u9045\u308c\u306f\u89e3\u6d88\u3002\n2026-07-03\t\u53ce\u7a6b\t\u4f50\u85e4\t\u304d\u3085\u3046\u308a\u306e\u53ce\u7a6b\u3002\u53ce\u7a6b\u91cf\u304c\u591a\u304f\u4eba\u624b\u304c\u8ffd\u3044\u3064\u304b\u306a\u3044\u3002\n2026-07-07\t\u53ce\u7a6b\t\u9234\u6728\t\u53ce\u7a6b\u3068\u51fa\u8377\u304c\u91cd\u306a\u308a\u3001\u51fa\u8377\u304c\u9045\u308c\u305f\u3002\u5c71\u672c\u3055\u3093\u306b\u9023\u7d61\u6e08\u307f\u3002\n2026-07-10\t\u51fa\u8377\u8abf\u6574\t\u9ad8\u6a4b\t\u3084\u307e\u3073\u3053\u98df\u54c1\u306e\u62c5\u5f53\u8005\uff08090-1234-5678\uff09\u304b\u3089\u7d0d\u671f\u306e\u78ba\u8a8d\u3002\n2026-07-14\t\u53ce\u7a6b\t\u5c71\u672c\t\u53ce\u7a6b\u9806\u8abf\u3002\u4eba\u624b\u306f\u8db3\u308a\u3066\u3044\u308b\u3002\n2026-07-17\t\u8349\u5208\u308a\t\u4f50\u85e4\t\u8349\u306e\u4f38\u3073\u304c\u65e9\u3044\u3002\u8349\u5208\u308a\u304c\u9045\u308c\u6c17\u5473\u3002\n2026-07-21\t\u6a5f\u68b0\u6574\u5099\t\u9234\u6728\t\u8efd\u30c8\u30e9\u306e\u30a8\u30a2\u30b3\u30f3\u6545\u969c\u3002\u71b1\u4e2d\u75c7\u304c\u5fc3\u914d\u3002\n2026-07-24\t\u53ce\u7a6b\t\u9ad8\u6a4b\t\u53ce\u7a6b\u3002\u7279\u306b\u9045\u308c\u306a\u3057\u3002\n2026-07-28\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u51fa\u8377\u30e9\u30d9\u30eb\u306e\u5370\u5237\u30df\u30b9\u3002\u8cbc\u308a\u76f4\u3057\u306730\u5206\u9045\u308c\u3002\n2026-08-01\t\u53ce\u7a6b\t\u4f50\u85e4\t\u731b\u6691\u3067\u5348\u524d\u306e\u307f\u4f5c\u696d\u3002\u4eba\u624b\u304c\u8db3\u308a\u305a\u53ce\u7a6b\u304c\u9045\u308c\u305f\u3002\n2026-08-05\t\u9632\u9664\t\u9234\u6728\t\u5bb3\u866b\u304c\u5897\u3048\u3066\u3044\u308b\u3002\u9632\u9664\u304c\u9045\u308c\u305f\u304b\u3082\u3057\u308c\u306a\u3044\u3002\n2026-08-08\t\u53ce\u7a6b\t\u9ad8\u6a4b\t\u304a\u76c6\u524d\u3067\u6ce8\u6587\u5897\u3002\u4eba\u624b\u4e0d\u8db3\u304c\u6df1\u523b\u3002\n2026-08-12\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u3072\u304c\u3057\u9752\u679c\u3078\u51fa\u8377\u3002\u9045\u308c\u306a\u3057\u3002\n2026-08-16\t\u8349\u5208\u308a\t\u4f50\u85e4\t\u4f11\u307f\u660e\u3051\u306e\u8349\u5208\u308a\u3002\u6545\u969c\u306a\u3057\u3002\n2026-08-19\t\u6a5f\u68b0\u6574\u5099\t\u9234\u6728\t\u51b7\u8535\u5eab\u306e\u6e29\u5ea6\u304c\u4e0b\u304c\u3089\u306a\u3044\u3002\u6545\u969c\u306e\u53ef\u80fd\u6027\u304c\u3042\u308a\u696d\u8005\u306b\u9023\u7d61\u3002\n2026-08-23\t\u53ce\u7a6b\t\u9ad8\u6a4b\t\u53ce\u7a6b\u91cf\u304c\u843d\u3061\u3066\u304d\u305f\u3002\u4eba\u624b\u306f\u8db3\u308a\u305f\u3002\n2026-08-27\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u51b7\u8535\u5eab\u306e\u6545\u969c\u3067\u51fa\u8377\u524d\u306e\u4fdd\u7ba1\u304c\u3067\u304d\u305a\u3001\u5f53\u65e5\u51fa\u8377\u306b\u5207\u308a\u66ff\u3048\u3002\n2026-09-01\t\u7a32\u5208\u308a\u6e96\u5099\t\u4f50\u85e4\t\u30b3\u30f3\u30d0\u30a4\u30f3\u306e\u70b9\u691c\u3002\u52d5\u304b\u306a\u304f\u306a\u308b\u7b87\u6240\u306f\u306a\u304b\u3063\u305f\u3002\n2026-09-04\t\u7a32\u5208\u308a\u6e96\u5099\t\u9234\u6728\t\u4e7e\u71e5\u6a5f\u306e\u8a66\u904b\u8ee2\u3002\u7570\u97f3\u3042\u308a\u3002\n2026-09-08\t\u7a32\u5208\u308a\t\u9ad8\u6a4b\t\u7a32\u5208\u308a\u958b\u59cb\u3002\u30b3\u30f3\u30d0\u30a4\u30f3\u304c\u8a70\u307e\u308a\u3001\u4f5c\u696d\u304c\u9045\u308c\u305f\u3002\n2026-09-11\t\u7a32\u5208\u308a\t\u5c71\u672c\t\u53f0\u98a8\u3067\u7a32\u5208\u308a\u304c\u9045\u308c\u3002\u4eba\u624b\u3092\u96c6\u3081\u76f4\u3059\u5fc5\u8981\u3042\u308a\u3002\n2026-09-15\t\u7a32\u5208\u308a\t\u4f50\u85e4\t\u7a32\u5208\u308a\u518d\u958b\u3002\u4eba\u624b\u304c\u8db3\u308a\u305a\u3001\u9234\u6728\u3055\u3093\u3068\u4e8c\u4eba\u3067\u5bfe\u5fdc\u3002\n2026-09-18\t\u4e7e\u71e5\u8abf\u88fd\t\u9234\u6728\t\u4e7e\u71e5\u6a5f\u306e\u6545\u969c\u3002\u4fee\u7406\u307e\u30673\u65e5\u3002\u7c7e\u306e\u4fdd\u7ba1\u5834\u6240\u304c\u8db3\u308a\u306a\u3044\u3002\n2026-09-22\t\u4e7e\u71e5\u8abf\u88fd\t\u9ad8\u6a4b\t\u4e7e\u71e5\u6a5f\u304c\u76f4\u308a\u3001\u4f5c\u696d\u518d\u958b\u3002\u9045\u308c\u3092\u53d6\u308a\u623b\u3059\u3002\n2026-09-26\t\u51fa\u8377\u8abf\u6574\t\u5c71\u672c\t\u65b0\u7c73\u3092\u3084\u307e\u3073\u3053\u98df\u54c1\u3078\u51fa\u8377\u3002\u4e88\u5b9a\u3069\u304a\u308a\u3002\n";
+const SAMPLE_NAMES = "佐藤\n鈴木\n高橋\n山本", SAMPLE_ORGS = "ひがし青果\nやまびこ食品\nみなと運送";
+// サンプルの人の判定例（行番号1始まり → キーワード群: 1=困りごと, 0=該当せず）
+const SAMPLE_LABELS = {1:{f:0},2:{d:1,h:1},4:{d:0},5:{f:1},7:{f:1},8:{d:1},9:{f:0},10:{d:1},11:{h:1},12:{h:0},14:{h:1},16:{d:1},17:{d:0},18:{h:1},19:{f:1,d:1},20:{f:1},21:{h:1},23:{f:0},24:{d:0},25:{h:1},26:{d:1},28:{h:0},29:{d:1},30:{f:1},31:{d:0},32:{d:1},33:{h:1,d:1},34:{d:1},35:{h:1},36:{d:0},37:{f:0},38:{f:1},39:{h:0},40:{f:1},43:{d:1},44:{d:1,h:1},45:{h:1},46:{f:1},47:{d:1}};
+const DEF_GROUPS = [
+  {k:"d", base:"遅れ", syn:"遅延, 間に合わ, 延期, 押した"},
+  {k:"f", base:"故障", syn:"壊れ, 直らない, 動かな, 不調, 異音, 詰まり, 破れ"},
+  {k:"h", base:"人手", syn:"人が足り, 手が回らない, 手が足り, 応援, 残業"},
+];
+const DEF_NEG = "ない|なかった|なし|無し|ません|ではなく|足りた|足りている|解消|直った|問題なく";
+const DEF_EX = "かもしれない|追いつかない|間に合わな|足りない|回らない|直らない|動かな|下がらない|できない";
+const STOP = new Set("した,して,する,ない,なかった,ため,ので,から,まで,こと,もの,よう,あり,ある,いる,なっ,なる,れる,られ,です,ます,でき,さん,作業,日誌".split(","));
+
+const $ = id=>document.getElementById(id);
+const css = n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const esc = s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {get(k,d){try{const v=localStorage.getItem("diary:"+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("diary:"+k,JSON.stringify(v))}catch(e){}}};
+const isDark=()=>{const a=document.documentElement.dataset.theme;return a?a==="dark":matchMedia("(prefers-color-scheme: dark)").matches};
+const plen = s=>[...s].length;
+function hash(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+const LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const code = (prefix,i)=>prefix+(i<26?LETTERS[i]:LETTERS[Math.floor(i/26)-1]+LETTERS[i%26]);
+
+/* ---------- 状態 ---------- */
+const S = {rows:[], log:[], groups:DEF_GROUPS.map(g=>({...g})), syn:false, neg:DEF_NEG, ex:DEF_EX, useEx:true, basis:"all", heatMode:"n", isSample:true, sampleLabels:{}, tab:"data"};
+let LABELS = store.get("labels",{});   // key: hash(匿名化後の本文)+":"+群 → 1/0（生データは保存しない）
+
+/* ---------- CSV ---------- */
+function parseTable(txt){const delim=txt.split("\n")[0].includes("\t")?"\t":",";const out=[];let row=[],cell="",q=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];if(q){if(c==='"'){if(txt[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+    else if(c==='"')q=true;else if(c===delim){row.push(cell);cell=""}else if(c==="\n"){row.push(cell);out.push(row);row=[];cell=""}else if(c!=="\r")cell+=c}
+  if(cell||row.length){row.push(cell);out.push(row)}return out.filter(r=>r.some(c=>c.trim()))}
+function toRows(tbl){if(!tbl.length)return[];const h=tbl[0].map(s=>s.trim());const find=re=>h.findIndex(x=>re.test(x));
+  let iD=find(/^(日付|date)/i),iT=find(/^(作業|task)/i),iW=find(/^(記入者|氏名|author|name)/i),iB=find(/^(本文|内容|text|body|メモ)/i);let body=tbl.slice(1);
+  if(iB<0){iD=0;iT=1;iW=2;iB=3;body=tbl}
+  return body.map((r,k)=>({n:k+1,date:(r[iD]||"").trim(),task:(r[iT]||"（未記入）").trim()||"（未記入）",writer:(r[iW]||"").trim(),raw:(r[iB]||"").trim()})).filter(r=>r.raw)}
+
+/* ---------- 匿名化 ---------- */
+function anonymize(rows){const names=$("dict-name").value.split(/\n/).map(s=>s.trim()).filter(Boolean),orgs=$("dict-org").value.split(/\n/).map(s=>s.trim()).filter(Boolean),auto=$("auto").checked;
+  const person=new Map(),org=new Map(),log=new Map();
+  const pcode=n=>{if(!person.has(n))person.set(n,code("作業者",person.size));return person.get(n)};
+  const ocode=n=>{if(!org.has(n))org.set(n,code("取引先",org.size));return org.get(n)};
+  const note=(kind,src,dst,how)=>{const k=kind+"|"+src;const e=log.get(k)||{kind,src,dst,how,n:0};e.n++;log.set(k,e)};
+  rows.forEach(r=>{if(r.writer)pcode(r.writer)});names.forEach(pcode);orgs.forEach(ocode);
+  const NOTNAME=/^(皆|お客|奥|業者|担当|社長|みな|皆様|お子)$/;
+  const useN=$("nfkc").checked;
+  const out=rows.map(r=>{const norm=useN?r.raw.normalize("NFKC"):r.raw;let segs=[{t:norm,m:false}];
+    const rep=(re,fn)=>{segs=segs.flatMap(s=>{if(s.m)return[s];const res=[];let last=0;s.t.replace(re,(...a)=>{const m=a[0],idx=a[a.length-2];const d=fn(...a);if(d==null)return m;res.push({t:s.t.slice(last,idx),m:false},{t:d.t,m:true,src:m});last=idx+m.length;return m});res.push({t:s.t.slice(last),m:false});return res.filter(x=>x.t)})};
+    const lit=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    const dict=[...[...person.keys()].map(n=>[n,"氏名"]),...orgs.map(n=>[n,"取引先"])].sort((a,b)=>b[0].length-a[0].length);
+    if(dict.length)rep(new RegExp(dict.map(d=>lit(d[0])).join("|"),"g"),m=>{const isOrg=org.has(m)&&!person.has(m);const dst=isOrg?ocode(m):pcode(m);note(isOrg?"取引先":"氏名",m,dst,"辞書");return{t:dst}});
+    if(auto){
+      rep(/0\d{1,4}-\d{1,4}-\d{3,4}/g,m=>{note("電話番号",m,"［電話番号］","自動");return{t:"［電話番号］"}});
+      rep(/https?:\/\/[^\s、。）)」]+/g,m=>{note("URL",m,"［URL］","自動");return{t:"［URL］"}});
+      rep(/[\w.+-]+@[\w-]+\.[\w.]+/g,m=>{note("メール",m,"［メール］","自動");return{t:"［メール］"}});
+      rep(/(株式会社|有限会社|（株）|\(株\))[ァ-ヶー一-龥ぁ-んA-Za-z]{1,10}|[ァ-ヶー一-龥ぁ-んA-Za-z]{1,6}(青果|食品|商店|運送|商事|農協|物産)/g,m=>{const dst=ocode(m);note("取引先",m,dst,"自動");return{t:dst}});
+      rep(/([一-龥]{1,3}|[ァ-ヶ][ァ-ヶー]{1,5})(さん|様|くん|氏)/g,(m,nm,hon)=>{if(NOTNAME.test(nm))return null;const dst=pcode(nm);note("氏名",nm,dst,"自動");return{t:dst+hon}});
+    }
+    const anon=segs.map(s=>s.t).join("");
+    return{...r,norm,nfkcChanged:norm!==r.raw,id:"D"+String(r.n).padStart(3,"0"),writerCode:r.writer?pcode(r.writer):"",anon,segs,month:(r.date.match(/^(\d{4})[-/](\d{1,2})/)||[]).slice(1).map((v,i)=>i?v.padStart(2,"0"):v).join("-")||"不明"}});
+  return{rows:out,log:[...log.values()],nPerson:person.size,nOrg:org.size}}
+
+/* ---------- キーワード照合 ---------- */
+function terms(g){const t=[g.base.trim()].filter(Boolean);if(S.syn)g.syn.split(/[,、，]/).map(s=>s.trim()).filter(Boolean).forEach(s=>{if(!t.includes(s))t.push(s)});return t}
+let NEGRE=null,EXRE=null;
+function setNeg(){try{NEGRE=S.neg.trim()?new RegExp(S.neg):null;$("neg").style.borderColor=""}catch(e){NEGRE=null;$("neg").style.borderColor=css("--crit")}
+  try{EXRE=S.ex.trim()?new RegExp(S.ex,"g"):null;$("ex").style.borderColor=""}catch(e){EXRE=null;$("ex").style.borderColor=css("--crit")}}
+function negIn(after,useEx){if(!NEGRE)return null;let t=after,exw="";if(useEx&&EXRE){t=after.replace(EXRE,m=>{exw=exw||m;return"□".repeat(m.length)})}const m=t.match(NEGRE);return{m:m?m[0]:"",ex:exw}}
+function matchRow(text,g){const occ=[];terms(g).sort((a,b)=>(b===g.base.trim())-(a===g.base.trim())||b.length-a.length).forEach(t=>{let i=0;while((i=text.indexOf(t,i))!==-1){const e=i+t.length;if(!occ.some(o=>i<o.e&&e>o.s))occ.push({s:i,e,t});i=e}});occ.sort((a,b)=>a.s-b.s);
+  occ.forEach(o=>{const after=text.slice(o.e).split("。")[0].slice(0,12);o.after=after;const a=negIn(after,S.useEx),z=negIn(after,false);o.neg=!!(a&&a.m);o.negWord=a?a.m:"";o.exWord=a?a.ex:"";o.negNoEx=!!(z&&z.m)});return occ}
+/* 語に区切る（第5回）：区切り方の違いを見るため、句読点もトークンとして残す */
+const SEGW = typeof Intl!=="undefined"&&Intl.Segmenter?new Intl.Segmenter("ja",{granularity:"word"}):null;
+function tokens(t){if(!SEGW)return[...t];return[...SEGW.segment(t)].map(s=>s.segment).filter(s=>s.trim())}
+function analyze(){S.rows.forEach(r=>{r.key=hash(r.anon);r.tok=tokens(r.anon);r.m={};S.groups.forEach(g=>{const occ=matchRow(r.anon,g);const T=terms(g);r.m[g.k]={occ,hit:occ.length>0,count:occ.length,neg:occ.some(o=>o.neg),negNoEx:occ.some(o=>o.negNoEx),tokHit:r.tok.some(w=>T.includes(w))}})})}
+const label=(r,g)=>{const k=r.key+":"+g;if(k in LABELS)return LABELS[k];if(S.isSample&&S.sampleLabels[k]!==undefined)return S.sampleLabels[k];return undefined};
+function counted(r,g){const x=r.m[g];if(!x.hit)return false;if(S.basis==="noneg")return!x.neg;if(S.basis==="human")return label(r,g)===1;return true}
+const BASIS_JA={all:"一致した日誌",noneg:"否定の可能性を除いた日誌",human:"人が困りごとと判定した日誌"};
+const SER=()=>[css("--s1"),css("--s2"),css("--s3")];
+
+/* ---------- 読み込み ---------- */
+function load(){const tbl=parseTable($("raw").value);const rows=toRows(tbl);const A=anonymize(rows);S.rows=A.rows;S.log=A.log;S.anonInfo=A;
+  S.isSample=$("raw").value.trim()===SAMPLE.trim();S.sampleLabels={};
+  if(S.isSample){S.rows.forEach(r=>{const L=SAMPLE_LABELS[r.n];if(L)Object.entries(L).forEach(([g,v])=>S.sampleLabels[hash(r.anon)+":"+g]=v)})}
+  analyze();renderAll()}
+
+/* ---------- 描画：1 ---------- */
+function renderData(){const showRaw=$("show-raw").checked;
+  $("anon-table").innerHTML=`<tr><th>ID</th><th>日付</th><th>作業</th><th>記入者</th>${showRaw?"<th>元の文</th>":""}<th>匿名化後の本文</th></tr>`+S.rows.map(r=>`<tr><td class="mono">${r.id}</td><td class="nw">${esc(r.date)}</td><td class="nw">${esc(r.task)}</td><td class="nw"><span class="masked">${esc(r.writerCode)}</span></td>${showRaw?`<td class="muted" style="color:var(--fg-3)">${esc(r.raw)}</td>`:""}<td>${r.segs.map(s=>s.m?`<span class="masked" title="置換済み">${esc(s.t)}</span>`:esc(s.t)).join("")}</td></tr>`).join("");
+  $("anon-log").innerHTML=S.log.length?`<tr><th>種類</th><th>元の語</th><th>置換後</th><th class="n">回数</th><th>方法</th></tr>`+S.log.sort((a,b)=>a.kind.localeCompare(b.kind)||b.n-a.n).map(e=>`<tr><td class="nw">${e.kind}</td><td class="nw">${esc(e.src)}</td><td class="nw"><span class="masked">${esc(e.dst)}</span></td><td class="n">${e.n}</td><td>${e.how==="自動"?'<span class="pill warn">自動・要確認</span>':'<span class="pill">辞書</span>'}</td></tr>`).join(""):`<tr><td>本文中の置換はありません。</td></tr>`;
+  // 残存リスク：機械的な目安。見つからなくても、残っていないとは限らない
+  const RISK=[["敬称つきの語",/[一-龥ァ-ヶー]{1,6}(さん|様|くん|氏|ちゃん)/g],["長い数字の並び",/\d{6,}/g],["郵便番号・〒",/〒|(?<!\d)\d{3}-\d{4}(?!\d)/g],["住所らしき並び",/[一-龥]{2,4}(市|町|村)[一-龥]{1,4}(\d|丁目|番地)/g],["@を含む語",/\S*@\S*/g]];
+  const NOTN=/^(皆|お客|奥|業者|担当|社長|みな|皆様|お子)(さん|様)$/;
+  const res=[];S.rows.forEach(r=>RISK.forEach(([k,re])=>{(r.anon.match(re)||[]).forEach(m=>{if(k==="敬称つきの語"&&(NOTN.test(m)||/^(作業者|取引先)[A-Z]+/.test(m)))return;res.push({r,k,m})})}));
+  $("residual").innerHTML=res.length?`<div class="tbl-wrap"><table><tr><th>ID</th><th>種類</th><th>見つかった語</th></tr>${res.map(x=>`<tr><td class="mono">${x.r.id}</td><td class="nw">${x.k}</td><td><span class="pill warn">${esc(x.m)}</span></td></tr>`).join("")}</table></div><p class="small hint" style="margin:6px 0 0">辞書に足すか、問題ないと確認してから先へ進みます。</p>`:`<p class="small hint" style="margin:0">機械的な点検では見つかりませんでした（敬称・長い数字・郵便番号・住所・@）。<b>見つからない＝残っていない、ではありません。</b>目でも確かめます。</p>`;
+  const ch=S.rows.filter(r=>r.nfkcChanged);
+  $("nfkc-log").innerHTML=!$("nfkc").checked?`<p class="small hint" style="margin:0">NFKC はオフです。全角の「ＡＩ」と半角の「AI」は別の文字列として数えます。</p>`:ch.length?`<div class="tbl-wrap"><table><tr><th>ID</th>${showRaw?"<th>元の文</th>":""}<th>そろえて匿名化した後</th></tr>${ch.map(r=>`<tr><td class="mono">${r.id}</td>${showRaw?`<td style="color:var(--fg-3)">${esc(r.raw)}</td>`:""}<td>${esc(r.anon)}</td></tr>`).join("")}</table></div><p class="small hint" style="margin:6px 0 0">${ch.length}件が変わりました。NFKC は丸数字や単位記号も変えます。消してよい違いかを確かめます${showRaw?"":"（変わる前の文は「元の文も表示」で確認）"}。</p>`:`<p class="small hint" style="margin:0">NFKC で変わった行はありません（${S.rows.length}件すべて同じ）。全角の英数字や記号を含む日誌を貼ると、ここに差が出ます。</p>`;
+  const SAFE=["このページは外部と通信しない（読み込み・匿名化・集計はブラウザ内で実行）","生データ（元の文）は保存しない。手元では data/raw/ に分けて置く","置換の記録（対応表）は共有しない・提出物に含めない","「自動・要確認」の置換と、取りこぼしがないかを目で確認した","外部の生成AIには入力しない（匿名化済みでも、今回は入力しない方針）"];
+  const chk=store.get("safe",{});$("safe-list").innerHTML=SAFE.map((t,i)=>`<li><input type="checkbox" id="safe${i}" ${chk[i]?"checked":""}><label for="safe${i}">${esc(t)}</label></li>`).join("");
+  SAFE.forEach((_,i)=>$("safe"+i).onchange=e=>{const c=store.get("safe",{});c[i]=e.target.checked;store.set("safe",c);renderStatus()})}
+
+/* ---------- 描画：2 ---------- */
+function renderKwEdit(){$("kw-edit").innerHTML=S.groups.map((g,i)=>`<div class="kpi" style="display:flex;flex-direction:column;gap:6px"><div class="k"><i style="background:${SER()[i]}"></i>キーワード${i+1}</div>
+  <input type="text" id="kb${i}" value="${esc(g.base)}" aria-label="キーワード${i+1}"><label class="fld">言い換え（カンマ区切り）<input type="text" id="ks${i}" value="${esc(g.syn)}"></label></div>`).join("");
+  S.groups.forEach((g,i)=>{$("kb"+i).oninput=e=>{g.base=e.target.value;analyze();renderAll(true)};$("ks"+i).oninput=e=>{g.syn=e.target.value;if(S.syn){analyze();renderAll(true)}}})}
+function renderCount(){const col=SER(),N=S.rows.length;
+  $("kpis").innerHTML=S.groups.map((g,i)=>{const hit=S.rows.filter(r=>r.m[g.k].hit),c=S.rows.filter(r=>counted(r,g.k)).length,occ=hit.reduce((s,r)=>s+r.m[g.k].count,0),neg=hit.filter(r=>r.m[g.k].neg).length;
+    return`<div class="kpi"><div class="k"><i style="background:${col[i]}"></i>「${esc(g.base)}」${S.syn?"＋言い換え":""}</div><div class="v">${c} <small>件 / ${N}件（${N?(c/N*100).toFixed(1):0}%）</small></div><div class="s">一致 ${hit.length}件・出現 ${occ}回・否定の可能性 ${neg}件</div></div>`}).join("");
+  // 月別
+  const months=[...new Set(S.rows.map(r=>r.month))].sort();const data=months.map(m=>S.groups.map(g=>S.rows.filter(r=>r.month===m&&counted(r,g.k)).length));const nPer=months.map(m=>S.rows.filter(r=>r.month===m).length);
+  $("month-hint").textContent=`${BASIS_JA[S.basis]}の件数。各月の日誌数は ${months.map((m,i)=>m.slice(5)+"月 "+nPer[i]+"件").join("・")}。`;
+  $("lg-month").innerHTML=S.groups.map((g,i)=>`<span><i style="background:${col[i]}"></i>${esc(g.base)}</span>`).join("");
+  const W=560,H=240,P={l:28,r:8,t:10,b:26},mx=Math.max(1,...data.flat()),gw=(W-P.l-P.r)/Math.max(1,months.length),bw=Math.min(18,(gw-12)/3);
+  const sy=v=>H-P.b-v/mx*(H-P.t-P.b);const ticks=[];const step=mx<=5?1:mx<=10?2:5;for(let v=0;v<=mx;v+=step)ticks.push(v);
+  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="月ごとの件数">`+ticks.map(v=>`<line class="gl" x1="${P.l}" x2="${W-P.r}" y1="${sy(v)}" y2="${sy(v)}"/><text class="ax" x="${P.l-6}" y="${sy(v)+4}" text-anchor="end">${v}</text>`).join("");
+  months.forEach((m,mi)=>{const x0=P.l+mi*gw+(gw-bw*3-4)/2;data[mi].forEach((v,gi)=>{const x=x0+gi*(bw+2),y=sy(v),h=H-P.b-y;
+    if(v>0)svg+=`<path d="M${x},${H-P.b} V${y+Math.min(4,h)} Q${x},${y} ${x+Math.min(4,bw/2)},${y} H${x+bw-Math.min(4,bw/2)} Q${x+bw},${y} ${x+bw},${y+Math.min(4,h)} V${H-P.b} Z" fill="${col[gi]}"/>`;
+    svg+=`<rect x="${x-1}" y="${P.t}" width="${bw+2}" height="${H-P.t-P.b}" fill="transparent" data-tip="${esc(m)}　「${esc(S.groups[gi].base)}」 ${v}件（その月の日誌 ${nPer[mi]}件）"/>`});
+    svg+=`<text class="ax" x="${P.l+mi*gw+gw/2}" y="${H-8}" text-anchor="middle">${m==="不明"?"不明":+m.slice(5)+"月"}</text>`});
+  svg+=`<line class="base" x1="${P.l}" x2="${W-P.r}" y1="${H-P.b}" y2="${H-P.b}"/></svg><div class="tip" hidden></div>`;$("ch-month").innerHTML=svg;tipify($("ch-month"));
+  // 作業×キーワード
+  const tasks=[...new Set(S.rows.map(r=>r.task))];const tn=tasks.map(t=>S.rows.filter(r=>r.task===t).length);
+  const rate=S.heatMode==="r";
+  const cnt=tasks.map(t=>S.groups.map(g=>S.rows.filter(r=>r.task===t&&counted(r,g.k)).length));
+  const cells=rate?cnt.map((row,i)=>row.map(v=>v/tn[i])):cnt;const hm=rate?Math.max(.01,...cells.flat()):Math.max(1,...cells.flat());const lo=css("--seq0"),hi=css("--seq1");
+  $("heat-hint").innerHTML=rate?"セルは<b>その作業の日誌のうち何%か</b>（件数÷日誌数）。日誌数が少ない作業は、1件で大きく動きます。":"セルは件数。色が濃いほど多い。分母（その作業の日誌数）も並べて読みます。";
+  const order=tasks.map((t,i)=>i).sort((a,b)=>cells[b].reduce((x,y)=>x+y,0)-cells[a].reduce((x,y)=>x+y,0)||tn[b]-tn[a]);
+  $("heat").style.gridTemplateColumns="minmax(80px,1.4fr) repeat(3,minmax(0,1fr)) 52px";
+  $("heat").innerHTML=`<div class="h">作業</div>`+S.groups.map((g,i)=>`<div class="h hc"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col[i]};margin-right:5px"></span>${esc(g.base)}</div>`).join("")+`<div class="h hc">日誌数</div>`+
+    order.map(ti=>`<div class="h">${esc(tasks[ti])}</div>`+cells[ti].map((v,gi)=>{const t=v/hm,k=cnt[ti][gi];return`<div class="c" title="${esc(tasks[ti])} ×「${esc(S.groups[gi].base)}」：${k}件 / ${tn[ti]}件（${(k/tn[ti]*100).toFixed(0)}%）" style="background:color-mix(in srgb,${hi} ${Math.round(t*100)}%,${lo});color:${t>.55?(isDark()?"#0d1a2b":"#fff"):css("--fg")}">${k?(rate?Math.round(v*100)+"%":k):"·"}</div>`}).join("")+`<div class="c" style="color:var(--fg-3)">${tn[ti]}</div>`).join("");
+  renderSegCmp();renderWriter()}
+function renderSegCmp(){const N=S.rows.length;
+  $("seg-cmp").innerHTML=`<tr><th>語</th><th class="n">部分文字列で一致</th><th class="n">語として一致</th><th class="n">差</th></tr>`+S.groups.map(g=>{const a=S.rows.filter(r=>r.m[g.k].hit).length,b=S.rows.filter(r=>r.m[g.k].tokHit).length;return`<tr><td>「${esc(g.base)}」${S.syn?"＋言い換え":""}</td><td class="n">${a}件</td><td class="n">${b}件</td><td class="n">${a-b?`<b>${a-b}</b>`:0}</td></tr>`}).join("")+`<tr><td colspan="4" class="small" style="color:var(--fg-3)">分母はどちらも全${N}件。${SEGW?"語の区切りはブラウザの Intl.Segmenter（辞書は環境しだい）":"この環境では語に区切れないため、1文字ずつで代用"}。</td></tr>`;
+  const ex=[];S.rows.forEach(r=>S.groups.forEach(g=>{const x=r.m[g.k];if(x.hit&&!x.tokHit)ex.push({r,g})}));
+  $("seg-ex").innerHTML=ex.length?`<tr><th>ID</th><th>語</th><th>区切った結果（キーワードを含む語に印）</th></tr>`+ex.slice(0,8).map(({r,g})=>{const T=terms(g);return`<tr><td class="mono">${r.id}</td><td class="nw">${esc(g.base)}</td><td>${r.tok.map(w=>T.some(t=>w.includes(t))?`<mark>${esc(w)}</mark>`:esc(w)).join('<span style="color:var(--fg-3)"> / </span>')}</td></tr>`}).join(""):`<tr><td>部分文字列と語の区切りで、拾う日誌は同じでした。</td></tr>`}
+function renderWriter(){const ws=[...new Set(S.rows.map(r=>r.writerCode||"（記入者なし）"))];
+  const any=r=>S.groups.some(g=>counted(r,g.k));
+  const st=ws.map(w=>{const rs=S.rows.filter(r=>(r.writerCode||"（記入者なし）")===w);return{w,n:rs.length,k:rs.filter(any).length}}).sort((a,b)=>b.n-a.n);
+  $("writer").innerHTML=`<tr><th>記入者</th><th class="n">日誌数</th><th class="n">${esc(BASIS_JA[S.basis])}</th><th class="n">割合</th></tr>`+st.map(x=>`<tr><td><span class="masked">${esc(x.w)}</span></td><td class="n">${x.n}件</td><td class="n">${x.k}件</td><td class="n">${(x.k/Math.max(1,x.n)*100).toFixed(0)}%</td></tr>`).join("")}
+function tipify(box){const tip=box.querySelector(".tip");box.onmousemove=e=>{const t=e.target.closest("[data-tip]");if(!t){tip.hidden=true;return}tip.textContent=t.dataset.tip;tip.hidden=false;const b=box.getBoundingClientRect();tip.style.left=Math.min(Math.max(0,e.clientX-b.left+10),b.width-tip.offsetWidth)+"px";tip.style.top=Math.max(0,e.clientY-b.top-tip.offsetHeight-10)+"px"};box.onmouseleave=()=>tip.hidden=true}
+
+/* ---------- 描画：3 ---------- */
+function fillKwSelect(el,withAll){const v=el.value;el.innerHTML=(withAll?`<option value="*">すべて</option>`:"")+S.groups.map(g=>`<option value="${g.k}">${esc(g.base)}</option>`).join("");if(v&&[...el.options].some(o=>o.value===v))el.value=v}
+function judgeSel(r,g){const L=label(r,g);const own=(r.key+":"+g) in LABELS;return`<select class="judge ${L===1?"y":L===0?"n":""}" data-key="${r.key}:${g}" aria-label="${r.id}の判定"><option value=""${L===undefined?" selected":""}>未確認</option><option value="1"${L===1?" selected":""}>困りごと</option><option value="0"${L===0?" selected":""}>該当せず</option></select>${L!==undefined&&!own&&S.isSample?' <span class="pill" title="サンプルに入っている判定例">例</span>':""}`}
+function renderRead(){const gsel=$("kw-filter").value,f=$("flag-filter").value,rows=[];
+  S.rows.forEach(r=>S.groups.forEach(g=>{if(gsel!=="*"&&gsel!==g.k)return;const x=r.m[g.k];if(!x.hit)return;const L=label(r,g.k);
+    if(f==="neg"&&!x.neg)return;if(f==="todo"&&L!==undefined)return;if(f==="diff"&&!(L!==undefined&&((x.neg&&L===1)||(!x.neg&&L===0))))return;
+    x.occ.forEach((o,oi)=>rows.push({r,g,o,oi,x}))}));
+  $("kwic").innerHTML=rows.length?`<tr><th>ID</th><th>日付</th><th>作業</th><th style="text-align:right">前の文脈</th><th style="text-align:center">語</th><th>後ろの文脈</th><th>ルール</th><th>人の判定（日誌×語）</th></tr>`+rows.map(({r,g,o,oi,x})=>{const t=r.anon;const L=[...t.slice(0,o.s)].slice(-18).join(""),R=[...t.slice(o.e)].slice(0,18).join("");
+    return`<tr><td class="mono">${r.id}${x.count>1?`<br><span class="small" style="color:var(--fg-3)">${oi+1}/${x.count}回目</span>`:""}</td><td class="nw">${esc(r.date.slice(5))}</td><td class="nw">${esc(r.task)}</td><td class="l">${esc(L)}</td><td class="kw"><mark>${esc(o.t)}</mark></td><td class="r">${esc(R)}</td><td>${o.neg?`<span class="pill crit" title="直後に「${esc(o.negWord)}」">否定の可能性：${esc(o.negWord)}</span>`:o.exWord&&o.negNoEx?`<span class="pill" title="例外「${esc(o.exWord)}」のため否定として数えない">一致（例外：${esc(o.exWord)}）</span>`:'<span class="pill">一致</span>'}</td><td class="nw">${oi===0?judgeSel(r,g.k):'<span class="small" style="color:var(--fg-3)">（同じ日誌）</span>'}</td></tr>`}).join(""):`<tr><td>条件に合う一致はありません。</td></tr>`;
+  // ずれ
+  const D=[];S.rows.forEach(r=>S.groups.forEach(g=>{const x=r.m[g.k],L=label(r,g.k);if(!x.hit||L===undefined)return;if(x.neg&&L===1)D.push({r,g,type:"ルールは否定、人は困りごと",why:x.occ.find(o=>o.neg).negWord});else if(!x.neg&&L===0)D.push({r,g,type:"ルールは一致、人は該当せず",why:""})}));
+  $("diff").innerHTML=D.length?`<tr><th>ID</th><th>語</th><th>ずれ方</th><th>原文（匿名化後）</th></tr>`+D.map(d=>`<tr><td class="mono">${d.r.id}</td><td class="nw">${esc(d.g.base)}</td><td class="nw">${d.type}${d.why?`<br><span class="small" style="color:var(--fg-3)">「${esc(d.why)}」に反応</span>`:""}</td><td>${hlText(d.r.anon,d.r.m[d.g.k].occ)}</td></tr>`).join(""):`<tr><td>まだずれはありません（判定済みの一致がないか、ルールと人の判定がすべて合っています）。</td></tr>`;
+  // ルールの当たり方：否定なし→困りごと、否定あり→該当せず、と読んだときに人の判定と合う割合
+  let n=0,aEx=0,aNo=0;S.rows.forEach(r=>S.groups.forEach(g=>{const x=r.m[g.k],L=label(r,g.k);if(!x.hit||L===undefined)return;n++;if((x.neg?0:1)===L)aEx++;if((x.negNoEx?0:1)===L)aNo++}));
+  $("rule-acc").innerHTML=n?`<div class="kpis" style="margin-bottom:10px"><div class="kpi"><div class="k">例外なしのルール</div><div class="v">${(aNo/n*100).toFixed(0)}<small>%</small></div><div class="s">${aNo}/${n}件が人の判定と一致</div></div><div class="kpi"><div class="k">例外ありのルール${S.useEx?"（使用中）":""}</div><div class="v">${(aEx/n*100).toFixed(0)}<small>%</small></div><div class="s">${aEx}/${n}件が人の判定と一致</div></div></div>`+(S.isSample?`<p class="small hint" style="margin:0 0 8px">例外は、この判定例を見てから作ったものです。同じデータで良く見えるのは当然なので、<b>新しい日誌でも確かめる</b>まで「改善した」とは書きません。</p>`:""):"";
+  renderCo();renderNgram()}
+function renderNgram(){const gsel=$("kw-filter").value,n=+$("ng-n").value,dir=$("ng-dir").value;const gs=gsel==="*"?S.groups:S.groups.filter(g=>g.k===gsel);
+  const PUNCT=/^[、。，．,.！？!?]$/;const M=new Map();
+  S.rows.forEach(r=>gs.forEach(g=>{if(!counted(r,g.k))return;const T=terms(g),tk=r.tok;
+    tk.forEach((w,i)=>{if(!T.some(t=>w.includes(t)))return;const s=dir==="after"?i:i-n+1,e=s+n;if(s<0||e>tk.length)return;const win=tk.slice(s,e);if(win.some(x=>PUNCT.test(x)))return;
+      const key=win.join(" → ");const v=M.get(key)||{key,g,occ:0,rows:new Set()};v.occ++;v.rows.add(r.id);M.set(key,v)})}));
+  const L=[...M.values()].sort((a,b)=>b.rows.size-a.rows.size||b.occ-a.occ).slice(0,15);
+  $("ngram").innerHTML=L.length?`<tr><th>となりの${n}語（順番のまま）</th><th>語</th><th class="n">件数（日誌）</th><th class="n">回数</th><th>原文のID</th></tr>`+L.map(x=>`<tr><td>${esc(x.key)}</td><td class="nw">${esc(x.g.base)}</td><td class="n">${x.rows.size}件</td><td class="n">${x.occ}回</td><td class="mono" style="white-space:normal">${[...x.rows].slice(0,6).join(", ")}${x.rows.size>6?" …":""}</td></tr>`).join(""):`<tr><td>この条件では、句読点をまたがない${n}語の組がありません（${esc(BASIS_JA[S.basis])}が対象）。</td></tr>`}
+function hlText(t,occ){let out="",i=0;occ.forEach(o=>{out+=esc(t.slice(i,o.s))+"<mark>"+esc(t.slice(o.s,o.e))+"</mark>";i=o.e});return out+esc(t.slice(i))}
+const SEG = typeof Intl!=="undefined"&&Intl.Segmenter?new Intl.Segmenter("ja",{granularity:"word"}):null;
+function words(t){const clean=t.replace(/(作業者|取引先)[A-Z]+/g," ").replace(/［[^］]*］/g," ");if(SEG)return[...SEG.segment(clean)].filter(s=>s.isWordLike).map(s=>s.segment);const a=[...clean.replace(/[、。\s]/g,"")];return a.slice(0,-1).map((c,i)=>c+a[i+1])}
+function renderCo(){const gsel=$("kw-filter").value;const gs=gsel==="*"?S.groups:S.groups.filter(g=>g.k===gsel);
+  const inG=r=>gs.some(g=>counted(r,g.k));const A=S.rows.filter(inG),B=S.rows.filter(r=>!inG(r));const excl=new Set(gs.flatMap(g=>terms(g)));
+  const df=rs=>{const m=new Map();rs.forEach(r=>new Set(words(r.anon)).forEach(w=>m.set(w,(m.get(w)||0)+1)));return m};const da=df(A),db=df(B);
+  const list=[...da].filter(([w,n])=>n>=2&&plen(w)>=2&&!STOP.has(w)&&!excl.has(w)&&!/^[\d０-９]+$/.test(w)&&!/^[ぁ-んー]+$/.test(w)).map(([w,n])=>({w,n,ra:n/Math.max(1,A.length),rb:(db.get(w)||0)/Math.max(1,B.length)})).sort((a,b)=>(b.ra-b.rb)-(a.ra-a.rb)||b.n-a.n).slice(0,12);
+  $("co-hint").textContent=`「${gs.map(g=>g.base).join("・")}」の${BASIS_JA[S.basis]}（${A.length}件）に、2件以上で一緒に出てくる語。それ以外の日誌（${B.length}件）より出やすい順。${SEG?"分かち書きはブラウザの Intl.Segmenter（簡易）":"文字2-gramで代用"}。`;
+  $("co").innerHTML=list.length?`<tr><th>語</th><th class="n">該当日誌</th><th class="n">該当での割合</th><th class="n">それ以外での割合</th></tr>`+list.map(x=>`<tr><td>${esc(x.w)}</td><td class="n">${x.n}件</td><td class="n">${(x.ra*100).toFixed(0)}%</td><td class="n">${(x.rb*100).toFixed(0)}%</td></tr>`).join(""):`<tr><td>該当する日誌が少ないため、共起語を出せません。</td></tr>`}
+
+/* ---------- 描画：4 ---------- */
+function renderCode(){const g=S.groups.find(x=>x.k===$("code-kw").value)||S.groups[0];const T=terms(g);const kw=JSON.stringify(g.base);
+  const pat=T.length>1?`"${T.join("|")}"`:kw;const negs=JSON.stringify(S.neg),exs=JSON.stringify(S.useEx?S.ex:"");
+  $("py").innerHTML=esc(`import re
+import unicodedata
+import pandas as pd
+
+df = pd.read_csv("diary_anon.csv")      # 匿名化済みだけを読む（生データは読まない）
+${$("nfkc").checked?`text = df["本文"].map(lambda s: unicodedata.normalize("NFKC", s))   # 表記をそろえた列（元の列は残す）`:`text = df["本文"]                      # NFKC はオフ（全角と半角を別の文字として数える）`}
+
+PAT = ${T.length>1?`r${pat}`:kw}${" ".repeat(Math.max(1,24-pat.length))}# 数える語${S.syn?"（言い換え込み）":""}
+NEG = re.compile(r${negs})
+EXC = re.compile(r${exs}) if ${exs} else None   # 「ない」を含むが否定ではない表現
+
+hit = text.str.contains(PAT, regex=${T.length>1?"True":"False"})
+print("件数（日誌）:", hit.sum(), "/", len(df))
+print("出現回数   :", text.str.count(${T.length>1?"PAT":"re.escape(PAT)"}).sum())
+
+def maybe_negated(s):
+    # 語の直後12文字（句点まで）に否定・解消の表現があるか
+    for m in re.finditer(${T.length>1?"PAT":"re.escape(PAT)"}, s):
+        after = s[m.end():].split("。")[0][:12]
+        if EXC:
+            after = EXC.sub(lambda x: "□" * len(x.group()), after)
+        if NEG.search(after):
+            return True
+    return False
+
+df["一致"] = hit
+df["要確認"] = hit & text.apply(maybe_negated)
+df["月"] = df["日付"].str[:7]
+
+print(pd.crosstab(df["作業"], df["一致"]))   # どの作業で
+print(df.groupby("月")["一致"].sum())        # どの時期に
+print(df.loc[hit, ["日付", "作業", "本文"]])  # 原文に戻って読む`).replace(/(#.*)$/gm,'<span class="cm">$1</span>');
+  $("dncl").textContent=`件数 = 0
+回数 = 0
+要確認 = 0
+i を 0 から 要素数(本文) - 1 まで 1 ずつ増やしながら繰り返す:
+│ c = 出現回数(本文[i], ${kw})
+│ もし c > 0 ならば:
+│ │ 件数 = 件数 + 1
+│ │ 回数 = 回数 + c
+│ │ もし 否定の可能性(本文[i], ${kw}) ならば:
+│ └ └ 要確認 = 要確認 + 1
+表示する(件数, 回数, 要確認)`;
+  let a=0,b=0,c=0;$("trace").innerHTML=`<tr><th class="n">i</th><th>ID</th><th>本文[i]（先頭）</th><th class="n">c</th><th class="n">件数</th><th class="n">回数</th><th class="n">要確認</th></tr><tr><td class="n">—</td><td></td><td>—</td><td class="n">—</td><td class="n">0</td><td class="n">0</td><td class="n">0</td></tr>`+S.rows.map((r,i)=>{const x=r.m[g.k];if(x.count){a++;b+=x.count;if(x.neg)c++}const short=[...r.anon].slice(0,14).join("")+(plen(r.anon)>14?"…":"");
+    return`<tr${x.count?' style="background:var(--accent-soft)"':""}><td class="n">${i}</td><td class="mono">${r.id}</td><td>${esc(short)}</td><td class="n">${x.count}</td><td class="n">${a}</td><td class="n">${b}</td><td class="n">${c}</td></tr>`}).join("");
+  // 検証
+  const test=["故障","故障、故障","故障はなかった"],tg={base:"故障",syn:""};const saved=S.syn;S.syn=false;const res=test.map(t=>matchRow(t,tg));S.syn=saved;
+  const n1=res.filter(o=>o.length).length,n2=res.reduce((s,o)=>s+o.length,0),n3=res.filter(o=>o.some(x=>x.neg)).length;const ok=n1===3&&n2===4&&n3===1;
+  $("verify").innerHTML=`<div class="tbl-wrap"><table><tr><th>入力</th><th class="n">in（件数に足す）</th><th class="n">count（回数）</th><th>否定の可能性</th></tr>${test.map((t,i)=>`<tr><td>${esc(t)}</td><td class="n">${res[i].length?1:0}</td><td class="n">${res[i].length}</td><td>${res[i].some(x=>x.neg)?"あり":"なし"}</td></tr>`).join("")}<tr><td><b>合計</b></td><td class="n"><b>${n1}</b></td><td class="n"><b>${n2}</b></td><td><b>${n3}件</b></td></tr></table></div>
+   <p class="note" style="border-left:3px solid ${ok?"var(--good)":"var(--crit)"}">${ok?"<b>✓ 期待値（件数3・回数4・要確認1）と一致。</b>件数と回数を取り違えていません。":"<b>✕ 期待値と一致しません。</b>否定表現の設定を確認してください（「なかった」が含まれているか）。"}</p>`;
+  renderMemo()}
+let memoTouched=false;
+function renderMemo(){if(memoTouched)return;const N=S.rows.length;const dates=S.rows.map(r=>r.date).filter(Boolean).sort();
+  const lines=S.groups.map(g=>{const hit=S.rows.filter(r=>r.m[g.k].hit);const occ=hit.reduce((s,r)=>s+r.m[g.k].count,0);const neg=hit.filter(r=>r.m[g.k].neg);const yes=hit.filter(r=>label(r,g.k)===1);return{g,hit,occ,neg,yes}});
+  const tn=t=>S.rows.filter(r=>r.task===t).length;
+  const top=S.groups.map(g=>{const by={};S.rows.filter(r=>r.m[g.k].hit&&label(r,g.k)===1).forEach(r=>{by[r.task]=(by[r.task]||0)+1});const t=Object.entries(by).sort((a,b)=>b[1]-a[1])[0];return t?`「${g.base}」は${t[0]}（その作業の日誌${tn(t[0])}件中${t[1]}件）`:null}).filter(Boolean);
+  const ev=lines.flatMap(l=>l.yes.slice(0,1).map(r=>`${r.id}「${r.anon}」`)).slice(0,2);
+  const negEx=lines.flatMap(l=>l.hit.filter(r=>label(r,l.g.k)===0).slice(0,1).map(r=>`${r.id}「${r.anon}」`)).slice(0,1);
+  const fp=S.rows.filter(r=>S.groups.some(g=>r.m[g.k].hit&&r.m[g.k].neg&&label(r,g.k)===1)).slice(0,1).map(r=>r.id);
+  const wr=[...new Set(S.rows.map(r=>r.writerCode))].map(w=>S.rows.filter(r=>r.writerCode===w).length);
+  const savedSyn=S.syn;S.syn=true;const extra=S.rows.filter(r=>S.groups.some(g=>matchRow(r.anon,g).length)&&!S.groups.some(g=>r.m[g.k].hit)).length;S.syn=savedSyn;
+  $("memo").value=`方法｜${S.isSample?"架空の":""}作業日誌${N}件（${dates.length?dates[0]+"〜"+dates[dates.length-1]:"期間不明"}）を対象にした。氏名・取引先・連絡先を置換し${$("nfkc").checked?"、表記を NFKC でそろえた（元の文は別に保管）":""}うえで、${S.groups.map(g=>"「"+g.base+"」").join("・")}${S.syn?"とその言い換え":""}を部分文字列一致で検索した。1件の日誌に2回出ても件数は1件とし、出現回数は別に数えた。キーワード直後12文字（句点まで）の否定・解消表現は目安として印を付け、一致した日誌は原文を読んで人が判定した。
+結果｜${lines.map(l=>`「${l.g.base}」は${l.occ}回、全${N}件のうち${l.hit.length}件に現れた`).join("。")}。このうち人が困りごとと判定したのは${lines.map(l=>`「${l.g.base}」${l.yes.length}件`).join("・")}。${top.length?"最も多い作業は、"+top.join("、")+"。":""}
+解釈の根拠｜${ev.length?ev.join("、")+"。":""}［ここに原文の言葉を引いて、自分の読みを書く］
+限界｜${negEx.length?`${negEx[0]}のように、一致しても困りごとではない日誌がある。`:""}${fp.length?`${fp[0]}のように、否定ルールが困りごとを外す誤反応もある。`:""}${!S.syn&&extra?`言い換え（「人が足りず」「動かない」など）を数えると、さらに${extra}件が対象になる。`:""}件数は書いた回数であり、困りごとの重さや人数ではない（記入者ごとの日誌数は${Math.min(...wr)===Math.max(...wr)?"全員"+wr[0]+"件で同じだが、書き方の癖は人によって違いうる":Math.min(...wr)+"〜"+Math.max(...wr)+"件"}）。前後関係が見えても、因果とはいえない。${S.isSample?"この日誌は教材用の架空データで、実際の農業法人の傾向を示すものではない。":""}`}
+
+/* ---------- AIの答えを確かめる（第6回：合計より先に内訳） ---------- */
+const countSub=(t,w)=>{if(!w)return 0;let n=0,i=0;while((i=t.indexOf(w,i))!==-1){n++;i+=w.length}return n};
+function aiScope(){const g=S.groups.find(x=>x.k===$("ai-kw").value)||S.groups[0];const w=g.base.trim();
+  const rows=$("ai-scope").value==="all"?S.rows:[...S.rows.filter(r=>countSub(r.anon,w)>0),...S.rows.filter(r=>countSub(r.anon,w)===0).slice(0,3)].sort((a,b)=>a.n-b.n);
+  return{g,w,rows,truth:new Map(rows.map(r=>[r.id,countSub(r.anon,w)]))}}
+function aiPrompt(){const{w,rows}=aiScope();return`次の作業日誌（教材用の架空データ）について、「${w}」という文字列が各行に何回出てくるか数えてください。
+条件：
+1. 原文を変えずに数える。言い換えや似た意味の語は数えない。
+2. 1行に2回出たら2回と数える。
+3. 回答は「ID 回数」を1行ずつ書く（例：D001 0）。最後に、合計の回数と、1回以上出てくる行の件数を書く。
+4. プログラムを実行して数えたと確認できない場合は、「実行していない」と明記する。
+
+${rows.map(r=>r.id+"\t"+r.anon).join("\n")}`}
+function aiDemo(){const{rows,truth}=aiScope();const ids=rows.map(r=>r.id);const m=new Map(truth);
+  // 教員作成の模擬回答：2回の行を1回に、0回の行を1回にする（合計はそろうが内訳がずれる例）
+  const two=ids.find(i=>truth.get(i)>=2),zero=ids.find(i=>truth.get(i)===0);if(two&&zero){m.set(two,truth.get(two)-1);m.set(zero,1)}else if(zero){m.set(zero,1)}
+  const tot=[...m.values()].reduce((a,b)=>a+b,0),n=[...m.values()].filter(v=>v>0).length;
+  return"（教員作成の模擬回答。AIの応答ログではありません）\n"+ids.map(i=>`${i} ${m.get(i)}`).join("\n")+`\n合計 ${tot}回、${n}件`}
+function renderAI(){const{w,rows,truth}=aiScope();
+  $("ai-prompt").value=S.isSample?aiPrompt():"（実際の日誌が読み込まれています。外部の生成AIには入力しない方針のため、依頼文は作りません。練習は「サンプルに戻す」で架空データに切り替えてから行います。）";
+  const ans=$("ai-ans").value,got=new Map();(ans.match(/D\d{3}[^\dD\n]{0,8}\d+/g)||[]).forEach(s=>{const m=s.match(/(D\d{3})[^\d]*(\d+)/);if(m&&truth.has(m[1])&&!got.has(m[1]))got.set(m[1],+m[2])});
+  const first=[...truth].sort((a,b)=>b[1]-a[1])[0];
+  if(!ans.trim()){$("ai-cmp").innerHTML=`<p class="note">回答を貼ると、行ごとに照らします。最初に確かめる行：<b>${first?first[0]:"—"}</b>（このページでは「${esc(w)}」${first?first[1]:0}回・1件）。</p>`;renderAILog(null);return}
+  const tT=[...truth.values()].reduce((a,b)=>a+b,0),tN=[...truth.values()].filter(v=>v>0).length;const gT=[...got.values()].reduce((a,b)=>a+b,0),gN=[...got.values()].filter(v=>v>0).length;
+  const rowsC=rows.map(r=>({r,t:truth.get(r.id),a:got.has(r.id)?got.get(r.id):null}));const same=rowsC.filter(x=>x.a===x.t).length,miss=rowsC.filter(x=>x.a===null).length;
+  const totOK=gT===tT,rowOK=same===rows.length;
+  const verdict=rowOK?`<b>確認した範囲で一致</b>（${rows.length}行すべて）。この${rows.length}行で合っても、どんな文でも正しいとは言えません。`:totOK?`<b>合計の回数は一致していますが、内訳がずれています。</b>誤りが打ち消し合っている例です。${gN!==tN?"現れた件数も違います。":""}最初の回答は残し、ずれた行を追記します。`:`<b>ずれがあります。</b>最初の回答は残し、違う行・直した内容・確かめた原文を追記します。`;
+  $("ai-cmp").innerHTML=`<p class="note" style="border-left:3px solid ${rowOK?"var(--good)":"var(--crit)"};margin-top:0">${verdict}</p>
+   <div class="kpis" style="margin-top:10px"><div class="kpi"><div class="k">行ごとの一致</div><div class="v">${same}<small> / ${rows.length}行</small></div><div class="s">${miss?`回答から読めない行 ${miss}`:"全行を読み取り"}</div></div><div class="kpi"><div class="k">合計の回数</div><div class="v">${gT}<small> / ページ ${tT}</small></div></div><div class="kpi"><div class="k">現れた件数</div><div class="v">${gN}<small> / ページ ${tN}</small></div></div></div>
+   <div class="tbl-wrap mt" style="margin-top:10px;max-height:260px;overflow:auto"><table><tr><th>ID</th><th>原文（匿名化後）</th><th class="n">ページ</th><th class="n">AI</th><th>照合</th></tr>${rowsC.sort((x,y)=>(x.a===x.t)-(y.a===y.t)||(y.t-x.t)).map(x=>`<tr${x.r.id===(first&&first[0])?' style="background:var(--accent-soft)"':""}><td class="mono">${x.r.id}</td><td>${hlText(x.r.anon,x.r.m[S.groups.find(g=>g.base.trim()===w)?.k||"d"]?.occ.filter(o=>o.t===w)||[])}</td><td class="n">${x.t}</td><td class="n">${x.a===null?"—":x.a}</td><td>${x.a===x.t?'<span class="pill good">一致</span>':`<span class="pill crit">${x.a===null?"読めない":"ずれ"}</span>`}</td></tr>`).join("")}</table></div>`;
+  renderAILog({same,n:rows.length,gT,tT,gN,tN,diff:rowsC.filter(x=>x.a!==x.t).map(x=>`${x.r.id}（ページ${x.t}・AI${x.a===null?"不明":x.a}）`)})}
+function renderAILog(c){const meta={svc:$("ai-svc").value,model:$("ai-model").value};store.set("ai-meta",meta);
+  $("ai-log").value=`サービス名：${meta.svc||"（未記入）"}
+表示モデル名：${meta.model||"不明"}
+日時：${$("ai-when").value}
+数えた語：「${aiScope().w}」／対象 ${aiScope().rows.length}行（${S.isSample?"架空のサンプル":"実データのため依頼文は作成せず"}）
+依頼文：
+${$("ai-prompt").value}
+最初の回答：
+${$("ai-ans").value||"（未入力）"}
+照合：${c?`行ごと ${c.same}/${c.n}行一致。合計 AI ${c.gT}回・${c.gN}件／ページ ${c.tT}回・${c.tN}件。${c.diff.length?"ずれた行："+c.diff.join("、"):"ずれた行なし"}`:"（未実施）"}
+自分で確かめた箇所：［例：最初に回数の最も多い行を原文で数え直した］`}
+const REPORT_CHECKS=["回数と件数（日誌）を区別した","分母（全何件か・作業ごとの日誌数）を示した","原文のIDと言葉を根拠にした","人数・重要度・因果へ読み替えていない","前処理（匿名化・NFKC）と数え方（部分一致か語か・否定ルール）を書いた","AIの利用・未使用と、自分で照合した範囲を記録した"];
+function renderReportChecks(){const c=store.get("report",{});$("report-checks").innerHTML=REPORT_CHECKS.map((t,i)=>`<li><input type="checkbox" id="rc${i}" ${c[i]?"checked":""}><label for="rc${i}">${esc(t)}</label></li>`).join("");
+  REPORT_CHECKS.forEach((_,i)=>$("rc"+i).onchange=e=>{const c=store.get("report",{});c[i]=e.target.checked;store.set("report",c)})}
+
+/* ---------- 描画：5 判定モデル ---------- */
+function bigrams(t){const a=[...t.replace(/(作業者|取引先)[A-Z]+/g,"◇").replace(/[\s、。，．,.！？!?（）()「」［］]/g,"")];const o=[];for(let i=0;i<a.length-1;i++)o.push(a[i]+a[i+1]);return o}
+function docLabel(r){const ls=S.groups.map(g=>r.m[g.k].hit?label(r,g.k):undefined).filter(v=>v!==undefined);if(!ls.length)return undefined;return ls.includes(1)?1:0}
+function trainNB(docs){const cnt=[new Map(),new Map()],tot=[0,0],nd=[0,0],V=new Set();docs.forEach(d=>{nd[d.y]++;bigrams(d.t).forEach(w=>{cnt[d.y].set(w,(cnt[d.y].get(w)||0)+1);tot[d.y]++;V.add(w)})});
+  const lp=(w,c)=>Math.log(((cnt[c].get(w)||0)+1)/(tot[c]+V.size));
+  return{cnt,tot,nd,V,lp,prob(t){const s=[0,1].map(c=>Math.log((nd[c]+1)/(nd[0]+nd[1]+2))+bigrams(t).filter(w=>V.has(w)).reduce((a,w)=>a+lp(w,c),0));const m=Math.max(...s);const e=s.map(v=>Math.exp(v-m));return e[1]/(e[0]+e[1])}}}
+let NB=null;
+// キーワードの前6文字〜後ろ10文字（句点で区切る）だけを特徴にする。困りごとかどうかは語の周りに書かれるため
+function ctx(t){const occ=S.groups.flatMap(g=>matchRow(t,g));return occ.length?occ.map(o=>t.slice(Math.max(0,o.s-6),o.e+10).split("。").join(" ")).join(" "):t}
+function renderModel(){const docs=S.rows.map(r=>({r,t:ctx(r.anon),y:docLabel(r)})).filter(d=>d.y!==undefined);const n1=docs.filter(d=>d.y===1).length,n0=docs.length-n1;
+  if(n1<3||n0<3){NB=null;$("m-kpis").innerHTML=`<div class="kpi" style="grid-column:1/-1"><div class="k">学習データ</div><div class="v">${docs.length} <small>件</small></div><div class="s">「困りごと」と「該当せず」がそれぞれ3件以上必要です（いま ${n1} / ${n0}）。③で判定を付けてください。</div></div>`;["m-pos","m-neg","m-todo"].forEach(id=>$(id).innerHTML="");$("m-p").textContent="—";$("m-bar").style.width="0";$("m-why").textContent="";return}
+  NB=trainNB(docs);let hit=0;docs.forEach((d,i)=>{const m=trainNB(docs.filter((_,j)=>j!==i));if((m.prob(d.t)>=.5?1:0)===d.y)hit++});
+  $("m-kpis").innerHTML=`<div class="kpi"><div class="k">学習データ</div><div class="v">${docs.length} <small>件</small></div><div class="s">困りごと ${n1}・該当せず ${n0}</div></div><div class="kpi"><div class="k">1件抜き交差検証</div><div class="v">${(hit/docs.length*100).toFixed(0)}<small>%</small></div><div class="s">${hit}/${docs.length}件を正しく判定</div></div>`;
+  const feats=[...NB.V].filter(w=>(NB.cnt[0].get(w)||0)+(NB.cnt[1].get(w)||0)>=2).map(w=>({w,s:NB.lp(w,1)-NB.lp(w,0),a:NB.cnt[1].get(w)||0,b:NB.cnt[0].get(w)||0}));
+  const tb=(arr,ttl)=>`<tr><th>${ttl}</th><th class="n">困りごと</th><th class="n">該当せず</th><th class="n">差</th></tr>`+arr.map(f=>`<tr><td class="mono">${esc(f.w.replace("◇","○"))}</td><td class="n">${f.a}</td><td class="n">${f.b}</td><td class="n">${f.s>0?"+":""}${f.s.toFixed(2)}</td></tr>`).join("");
+  $("m-pos").innerHTML=tb(feats.sort((a,b)=>b.s-a.s).slice(0,8),"困りごと寄り");$("m-neg").innerHTML=tb(feats.sort((a,b)=>a.s-b.s).slice(0,8),"該当せず寄り");
+  const todo=S.rows.filter(r=>S.groups.some(g=>r.m[g.k].hit)&&docLabel(r)===undefined).map(r=>({r,p:NB.prob(ctx(r.anon))})).sort((a,b)=>b.p-a.p);
+  $("m-todo").innerHTML=todo.length?`<tr><th>ID</th><th>作業</th><th>本文（匿名化後）</th><th class="n">困りごとの確率</th></tr>`+todo.map(x=>`<tr><td class="mono">${x.r.id}</td><td class="nw">${esc(x.r.task)}</td><td>${esc(x.r.anon)}</td><td class="n">${(x.p*100).toFixed(0)}%</td></tr>`).join(""):`<tr><td>一致した日誌はすべて人が確認済みです。②で「言い換えも数える」をオンにすると、未確認の一致が増えます。</td></tr>`;
+  predictInput()}
+function predictInput(){if(!NB)return;const t=$("m-in").value;const p=NB.prob(ctx(t));$("m-p").textContent=(p*100).toFixed(0)+"%";$("m-bar").style.width=(p*100).toFixed(1)+"%";
+  const top=bigrams(ctx(t)).map(w=>({w,s:NB.lp(w,1)-NB.lp(w,0),seen:NB.V.has(w)})).filter(x=>x.seen).sort((a,b)=>Math.abs(b.s)-Math.abs(a.s)).slice(0,4);
+  $("m-why").textContent=top.length?"効いた並び："+top.map(x=>`「${x.w.replace("◇","○")}」${x.s>0?"＋":"−"}`).join(" "):"学習データに出てこない文字ばかりで、判断材料がありません。";
+  if(/[一-龥]{1,3}(さん|様)/.test(t))$("m-why").textContent+="　⚠ 氏名らしき語があります。匿名化してから入力してください。"}
+
+
+/* ---------- インサイト ---------- */
+function mulberry(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function randn(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function rgamma(k,r){if(k<1)return rgamma(k+1,r)*Math.pow(r(),1/k);const d=k-1/3,c=1/Math.sqrt(9*d);for(;;){let x,v;do{x=randn(r);v=1+c*x}while(v<=0);v=v*v*v;const u=r();if(u<1-0.0331*x**4)return d*v;if(Math.log(u)<0.5*x*x+d*(1-v+Math.log(v)))return d*v}}
+function betaSamples(a,b,n,seed){const r=mulberry(seed),o=new Float64Array(n);for(let i=0;i<n;i++){const x=rgamma(a,r),y=rgamma(b,r);o[i]=x/(x+y)}return o}
+const q=(arr,p)=>{const s=Array.from(arr).sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(p*s.length))]};
+const DAY=864e5,toD=s=>{const t=Date.parse((s||"").replace(/\//g,"-")+"T00:00:00");return isNaN(t)?null:t};
+const fmtD=t=>{const d=new Date(t);return (d.getMonth()+1)+"/"+d.getDate()};
+function cntB(r,g,b){const x=r.m[g];if(!x.hit)return false;if(b==="noneg")return!x.neg;if(b==="human")return label(r,g)===1;return true}
+const IB=()=>$("ins-basis").value;
+const anyB=(r,b)=>S.groups.some(g=>cntB(r,g.k,b));
+const tgtB=(r,b,t)=>t==="*"?anyB(r,b):cntB(r,t,b);
+const gname=k=>k==="*"?"困りごと（3語のいずれか）":"「"+S.groups.find(g=>g.k===k).base+"」";
+const idList=(rows,max=6)=>rows.slice(0,max).map(r=>r.id).join(", ")+(rows.length>max?` ほか${rows.length-max}件`:"");
+
+function taskStats(b,t){const tasks=[...new Set(S.rows.map(r=>r.task))];const all=S.rows.filter(r=>tgtB(r,b,t)).length,N=S.rows.length;
+  return tasks.map((task,i)=>{const rs=S.rows.filter(r=>r.task===task),k=rs.filter(r=>tgtB(r,b,t)).length,n=rs.length;const ko=all-k,no=N-n;
+    const A=betaSamples(1+k,1+n-k,4000,11+i),B=betaSamples(1+ko,1+no-ko,4000,101+i);let gt=0;for(let j=0;j<4000;j++)if(A[j]>B[j])gt++;
+    return{task,k,n,mean:(1+k)/(2+n),lo:q(A,.05),hi:q(A,.95),p:gt/4000,ids:rs.filter(r=>tgtB(r,b,t))}}).sort((a,b)=>b.mean-a.mean)}
+
+function repairs(b){const FIX=/(直っ|直り|戻り|戻っ|修理から|復旧|再開)/;
+  const objOf=(t,s)=>{const left=t.slice(0,s);const mach=left.match(/軽トラ|[一-龥ァ-ヶー]{1,4}機|[一-龥]{1,3}庫/g);if(mach)return mach[mach.length-1];const kata=left.replace(/(作業者|取引先)[A-Z]+/g,"").match(/[ァ-ヶー]{2,}/g);return kata?kata[kata.length-1]:null};
+  const ep=[];S.rows.forEach(r=>{if(!cntB(r,"f",b))return;r.m.f.occ.forEach(o=>{const obj=objOf(r.anon,o.s);if(!obj)return;const d=toD(r.date);if(d==null)return;
+    let e=ep.find(x=>x.obj===obj&&!x.fixRow);if(!e){e={obj,start:d,rows:[r]};ep.push(e)}else if(!e.rows.includes(r))e.rows.push(r)})});
+  ep.forEach(e=>{const later=S.rows.filter(r=>toD(r.date)>e.start&&r.anon.includes(e.obj)&&FIX.test(r.anon.split("。").filter(s=>s.includes(e.obj)).join("。"))).sort((a,c)=>toD(a.date)-toD(c.date))[0];
+    if(later){e.fixRow=later;e.days=Math.round((toD(later.date)-e.start)/DAY)}});return ep}
+
+function lagStat(a,bk,W,b){const dated=S.rows.filter(r=>toD(r.date)!=null);const A=dated.filter(r=>cntB(r,a,b)),B=dated.filter(r=>cntB(r,bk,b));
+  const followed=r=>{const d=toD(r.date);return B.find(x=>x!==r&&toD(x.date)>=d&&toD(x.date)-d<=W*DAY)};
+  const pairs=A.map(r=>({r,nx:followed(r)})).filter(x=>x.nx);const pA=A.length?pairs.length/A.length:0;
+  const base=dated.filter(r=>followed(r)).length/Math.max(1,dated.length);
+  // 時期をそろえた基準：Aが書かれた月の日誌だけを起点にする（繁忙期という共通の原因をならす簡易な層別）
+  const mA=new Set(A.map(r=>r.month));const same=dated.filter(r=>mA.has(r.month));const baseM=same.length?same.filter(r=>followed(r)).length/same.length:0;
+  return{A,B,pairs,pA,base,lift:base?pA/base:0,baseM,liftM:baseM?pA/baseM:0,nM:same.length}}
+
+function renderInsights(){if(!S.rows.length)return;const b=IB(),col=SER(),N=S.rows.length;
+  fillKwSelect($("lag-a"),false);fillKwSelect($("lag-b"),false);if(!$("lag-a").dataset.init){$("lag-a").value="f";$("lag-b").value="d";$("lag-a").dataset.init=1}
+  const tv=$("ins-target").value||"*";$("ins-target").innerHTML=`<option value="*">困りごと（いずれか）</option>`+S.groups.map(g=>`<option value="${g.k}">${esc(g.base)}</option>`).join("");$("ins-target").value=tv;
+  const INS=[];
+  // 1 作業の偏り
+  const ts=taskStats(b,"*");const totK=S.rows.filter(r=>anyB(r,b)).length;const overall=totK/N;
+  const topT=ts.filter(x=>x.n>=3).sort((x,y)=>y.p-x.p)[0];
+  if(topT&&topT.k)INS.push({score:topT.p,title:`「${topT.task}」の日誌に困りごとが集まっている可能性`,ev:`${topT.n}件中${topT.k}件（推定 ${(topT.mean*100).toFixed(0)}%、90%区間 ${(topT.lo*100).toFixed(0)}〜${(topT.hi*100).toFixed(0)}%）。全体は${(overall*100).toFixed(0)}%。他の作業より高い事後確率 ${(topT.p*100).toFixed(0)}%。`,ids:topT.ids,cav:topT.n<8?"日誌数が少なく、区間が広い。":"記入頻度の多い作業ほど書かれやすい点に注意。",strength:topT.p>=.9&&topT.n>=6?"強":topT.p>=.75?"中":"弱"});
+  // 2 時期のピーク
+  const months=[...new Set(S.rows.map(r=>r.month))].sort();
+  S.groups.forEach(g=>{const c=months.map(m=>({m,k:S.rows.filter(r=>r.month===m&&cntB(r,g.k,b)).length,n:S.rows.filter(r=>r.month===m).length}));const tot=c.reduce((s,x)=>s+x.k,0);if(tot<3)return;
+    const pk=c.slice().sort((x,y)=>y.k/Math.max(1,y.n)-x.k/Math.max(1,x.n))[0];const avg=tot/c.reduce((s,x)=>s+x.n,0);const ratio=pk.n?pk.k/pk.n/avg:0;
+    if(ratio>=1.4&&pk.k>=2)INS.push({score:Math.min(.95,.5+(ratio-1)/3),title:`「${g.base}」は${+pk.m.slice(5)}月に多い`,ev:`${+pk.m.slice(5)}月は日誌${pk.n}件中${pk.k}件（${(pk.k/pk.n*100).toFixed(0)}%）。期間全体の平均 ${(avg*100).toFixed(0)}% の約${ratio.toFixed(1)}倍。`,ids:S.rows.filter(r=>r.month===pk.m&&cntB(r,g.k,b)),cav:"1か月の日誌数が少ないため、1〜2件の差で順位が入れ替わる。前年の日誌と比べたい。",strength:pk.k>=4&&ratio>=1.8?"中":"弱"})});
+  // 3 連鎖
+  const W=Math.max(1,+$("lag-w").value||7);const pairsTried=[];S.groups.forEach(a=>S.groups.forEach(c=>{if(a.k===c.k)return;const L=lagStat(a.k,c.k,W,b);if(L.A.length>=3)pairsTried.push({a,c,L})}));
+  const bestL=pairsTried.sort((x,y)=>y.L.lift-x.L.lift)[0];
+  if(bestL&&bestL.L.lift>=1.3)INS.push({score:Math.min(.9,.45+(bestL.L.lift-1)/2),title:`「${bestL.a.base}」の後に「${bestL.c.base}」が続きやすい`,ev:`「${bestL.a.base}」の日誌${bestL.L.A.length}件のうち${bestL.L.pairs.length}件で、${W}日以内に「${bestL.c.base}」が書かれた（${(bestL.L.pA*100).toFixed(0)}%）。任意の日誌を起点にした場合は${(bestL.L.base*100).toFixed(0)}%（約${bestL.L.lift.toFixed(1)}倍）。同じ月の日誌だけを起点にすると${(bestL.L.baseM*100).toFixed(0)}%（約${bestL.L.liftM.toFixed(1)}倍）。`,ids:bestL.L.pairs.map(x=>x.r),cav:`前後関係であって因果ではない。${bestL.L.liftM<1.2?"時期をそろえると差がほぼ消えるので、繁忙期などの共通の原因で説明できるかもしれない。":"時期をそろえても差は残るが、作業の種類など他の共通原因は未確認。"}`,strength:bestL.L.A.length>=6&&bestL.L.liftM>=1.8?"中":"弱"});
+  // 4 復旧
+  const ep=repairs(b);const fixed=ep.filter(e=>e.fixRow),open=ep.filter(e=>!e.fixRow);
+  if(ep.length){const ds=fixed.map(e=>e.days).sort((x,y)=>x-y);const med=ds.length?ds[Math.floor((ds.length-1)/2)]:null;
+    INS.push({score:.7+Math.min(.2,ep.length/20),title:`故障から復旧まで${med!=null?`中央値${med}日`:"の記録がない"}、${open.length}件は復旧の記載なし`,ev:`故障の対象として${ep.length}件（${[...new Set(ep.map(e=>e.obj))].join("・")}）。復旧の記載あり${fixed.length}件${ds.length?`（${ds.join("・")}日）`:""}、記載なし${open.length}件。`,ids:ep.flatMap(e=>e.rows),cav:"復旧を書く欄がないため、記載なし＝未復旧とは限らない。",strength:ep.length>=4?"中":"弱"})}
+  // 5 測り方の感度
+  if(!S.syn){const saved=S.syn;S.syn=true;const extra=S.rows.filter(r=>S.groups.some(g=>matchRow(r.anon,g).length>0)&&!S.groups.some(g=>r.m[g.k].hit));S.syn=saved;
+    if(extra.length)INS.push({score:.6,title:`言い換えを数えると、さらに${extra.length}件の日誌が対象になる`,ev:`基本の3語では拾えない書き方：${extra.slice(0,3).map(r=>"「"+r.anon.slice(0,22)+(plen(r.anon)>22?"…":"")+"」").join("、")}。`,ids:extra,cav:"言い換えは誤一致も増やすので、③で原文を確認する。",strength:"中"})}
+  // 6 ルールの精度
+  let fl=0,flY=0;const flEx=[];S.rows.forEach(r=>S.groups.forEach(g=>{const x=r.m[g.k];const L=label(r,g.k);if(x.hit&&x.neg&&L!==undefined){fl++;if(L===1){flY++;const o=x.occ.find(o=>o.neg);flEx.push(`${r.id}「${o.t}${o.after}」→「${o.negWord}」`)}}}));
+  if(fl>=3&&flY/fl>=.2)INS.push({score:.55,title:`否定ルールの誤反応が${(flY/fl*100).toFixed(0)}%`,ev:`「否定の可能性」と判定した${fl}件のうち${flY}件を、人は困りごとと判定。反応した例：${flEx.slice(0,3).join("、")}。${S.useEx?"":"②で「例外を使う」をオンにすると減るか確かめる。"}`,ids:S.rows.filter(r=>S.groups.some(g=>r.m[g.k].hit&&r.m[g.k].neg&&label(r,g.k)===1)),cav:"「否定の可能性を除く」基準の件数は少なめに出る。",strength:"中"});
+  INS.sort((x,y)=>y.score-x.score);S.insights=INS;
+  const STR={強:"good",中:"warn",弱:""};
+  $("ins-cards").innerHTML=INS.length?INS.map((x,i)=>`<article class="ins"><div class="row between" style="align-items:center"><span class="small" style="color:var(--fg-3);font-family:var(--f-mono)">#${i+1}</span><span class="pill ${STR[x.strength]}" title="件数と差の大きさから付けた目安">根拠：${x.strength}</span></div>
+     <h3 class="ins-t">${esc(x.title)}</h3><p class="ins-e">${esc(x.ev)}</p><p class="ins-id">原文：${esc(idList(x.ids))}</p><p class="ins-c">注意：${esc(x.cav)}</p></article>`).join(""):`<p class="small hint">この基準では気づきを出せるだけの件数がありません。「数える基準」を変えるか、③で判定を付けてください。</p>`;
+  // フォレスト
+  const t=$("ins-target").value||"*";const TS=taskStats(b,t);const all=S.rows.filter(r=>tgtB(r,b,t)).length/N;
+  const W2=560,LH=30,P={l:96,r:96,t:22,b:28},H=P.t+P.b+TS.length*LH,mx=Math.min(1,Math.max(.5,...TS.map(x=>x.hi))+.05),sx=v=>P.l+v/mx*(W2-P.l-P.r);
+  let sv=`<svg viewBox="0 0 ${W2} ${H}" role="img" aria-label="作業ごとの困りごと割合の推定">`;
+  const tk=[];for(let v=0;v<=mx+1e-9;v+=mx>.6?.2:.1)tk.push(+v.toFixed(2));
+  sv+=tk.map(v=>`<line class="gl" x1="${sx(v)}" x2="${sx(v)}" y1="${P.t-6}" y2="${H-P.b}"/><text class="ax" x="${sx(v)}" y="${H-P.b+16}" text-anchor="middle">${Math.round(v*100)}%</text>`).join("");
+  sv+=`<line x1="${sx(all)}" x2="${sx(all)}" y1="${P.t-10}" y2="${H-P.b}" stroke="${css("--fg-2")}" stroke-dasharray="4 3"/><text class="ax" x="${sx(all)}" y="${P.t-12}" text-anchor="middle">全体 ${Math.round(all*100)}%</text>`;
+  TS.forEach((x,i)=>{const y=P.t+i*LH+LH/2;const c=x.p>=.9?css("--crit"):css("--s1");
+    sv+=`<text x="${P.l-10}" y="${y+4}" text-anchor="end" style="fill:var(--fg);font:12px var(--f-body)">${esc(x.task)}</text><line x1="${sx(x.lo)}" x2="${sx(x.hi)}" y1="${y}" y2="${y}" stroke="${c}" stroke-width="2" stroke-linecap="round"/><circle cx="${sx(x.mean)}" cy="${y}" r="5" fill="${c}" stroke="${css("--surface")}" stroke-width="2"/>
+      <text class="ax" x="${W2-P.r+8}" y="${y+4}">${x.k}/${x.n}  P=${x.p.toFixed(2)}</text><rect x="0" y="${y-LH/2}" width="${W2}" height="${LH}" fill="transparent" data-tip="${esc(x.task)}：${x.k}/${x.n}件　推定 ${(x.mean*100).toFixed(0)}%（90%区間 ${(x.lo*100).toFixed(0)}〜${(x.hi*100).toFixed(0)}%）　他より高い確率 ${(x.p*100).toFixed(0)}%"/>`});
+  $("ch-forest").innerHTML=sv+`</svg><div class="tip" hidden></div>`;tipify($("ch-forest"));
+  // タイムライン
+  const dts=S.rows.map(r=>toD(r.date)).filter(v=>v!=null);if(dts.length){const d0=Math.min(...dts),d1=Math.max(...dts);const W3=560,P3={l:56,r:12,t:8,b:26},RH=34,H3=P3.t+P3.b+S.groups.length*RH,tx=d=>P3.l+(d-d0)/Math.max(DAY,d1-d0)*(W3-P3.l-P3.r);
+    let s3=`<svg viewBox="0 0 ${W3} ${H3}" role="img" aria-label="キーワードのタイムライン">`;
+    const m0=new Date(d0);m0.setDate(1);for(let m=new Date(m0);m.getTime()<=d1;m.setMonth(m.getMonth()+1)){const x=tx(Math.max(d0,m.getTime()));s3+=`<line class="gl" x1="${x}" x2="${x}" y1="${P3.t}" y2="${H3-P3.b}"/><text class="ax" x="${x+3}" y="${H3-P3.b+16}">${m.getMonth()+1}月</text>`}
+    S.groups.forEach((g,gi)=>{const y=P3.t+gi*RH+RH/2;s3+=`<text x="${P3.l-8}" y="${y+4}" text-anchor="end" style="fill:var(--fg);font:12px var(--f-body)">${esc(g.base)}</text><line class="base" x1="${P3.l}" x2="${W3-P3.r}" y1="${y}" y2="${y}" style="opacity:.35"/>`;
+      S.rows.forEach(r=>{const x=r.m[g.k];const d=toD(r.date);if(!x.hit||d==null)return;const on=cntB(r,g.k,b);
+        s3+=`<circle cx="${tx(d)}" cy="${y}" r="5" fill="${on?col[gi]:css("--surface")}" stroke="${on?css("--surface"):col[gi]}" stroke-width="${on?2:1.6}"/><rect x="${tx(d)-6}" y="${y-12}" width="12" height="24" fill="transparent" data-tip="${r.id} ${esc(r.date)} ${esc(r.task)}：${esc(r.anon.slice(0,30))}${on?"":"（基準外）"}"/>`})});
+    $("ch-tl").innerHTML=s3+`</svg><div class="tip" hidden></div>`;tipify($("ch-tl"));$("lg-tl").innerHTML=S.groups.map((g,i)=>`<span><i style="background:${col[i]};border-radius:50%"></i>${esc(g.base)}</span>`).join("")+`<span><i style="border:1.6px solid var(--fg-3);background:transparent;border-radius:50%"></i>基準外</span>`}
+  // 同じ日誌での共起
+  const C=S.groups.map(a=>S.groups.map(c=>S.rows.filter(r=>cntB(r,a.k,b)&&cntB(r,c.k,b)).length));const lo=css("--seq0"),hi=css("--seq1"),cm=Math.max(1,...C.flat());
+  $("co-mat").style.gridTemplateColumns="72px repeat(3,minmax(0,1fr))";
+  $("co-mat").innerHTML=`<div class="h">同じ日誌</div>`+S.groups.map(g=>`<div class="h hc">${esc(g.base)}</div>`).join("")+C.map((row,i)=>`<div class="h">${esc(S.groups[i].base)}</div>`+row.map((v,j)=>{const tt=v/cm;const lift=i!==j&&C[i][i]&&C[j][j]?(v*N)/(C[i][i]*C[j][j]):null;return`<div class="c" title="${esc(S.groups[i].base)} と ${esc(S.groups[j].base)}：${v}件${lift!=null?"　リフト "+lift.toFixed(2):""}" style="background:color-mix(in srgb,${hi} ${Math.round(tt*100)}%,${lo});color:${tt>.55?(isDark()?"#0d1a2b":"#fff"):css("--fg")}">${v}${lift!=null&&v?`<br><span style="font-size:10.5px;opacity:.8">×${lift.toFixed(1)}</span>`:""}</div>`}).join("")).join("");
+  // ラグ
+  const la=$("lag-a").value,lb=$("lag-b").value,Lg=lagStat(la,lb,W,b);
+  $("lag-out").innerHTML=la===lb?`<p class="note">A と B に別の語を選んでください。</p>`:`<p class="note">「${esc(gname(la).replace(/[「」]/g,""))}」の日誌 ${Lg.A.length}件のうち <b>${Lg.pairs.length}件（${(Lg.pA*100).toFixed(0)}%）</b>で、${W}日以内に「${esc(gname(lb).replace(/[「」]/g,""))}」が書かれました。任意の日誌を起点にした場合は ${(Lg.base*100).toFixed(0)}%${Lg.base?`（${Lg.lift.toFixed(1)}倍）`:""}。<br>時期をそろえる（Aと同じ月の日誌${Lg.nM}件だけを起点にする）と ${(Lg.baseM*100).toFixed(0)}%${Lg.baseM?`（${Lg.liftM.toFixed(1)}倍）`:""}。${Lg.A.length&&Lg.liftM<Lg.lift*0.8?"そろえると差が縮むので、時期（繁忙期など）が両方に効いている可能性があります。":""}</p>`+(Lg.pairs.length?`<div class="tbl-wrap" style="margin-top:8px"><table><tr><th>A の日誌</th><th>B の日誌</th><th class="n">日数</th></tr>${Lg.pairs.map(x=>`<tr><td><span class="mono">${x.r.id}</span> ${esc(x.r.task)}：${esc(x.r.anon.slice(0,18))}…</td><td><span class="mono">${x.nx.id}</span> ${esc(x.nx.task)}：${esc(x.nx.anon.slice(0,18))}…</td><td class="n">${Math.round((toD(x.nx.date)-toD(x.r.date))/DAY)}</td></tr>`).join("")}</table></div>`:"");
+  // 復旧
+  $("repair").innerHTML=ep.length?`<tr><th>対象</th><th>故障の記載</th><th>復旧の記載</th><th class="n">日数</th></tr>`+ep.map(e=>`<tr><td class="nw"><b style="font-weight:500">${esc(e.obj)}</b></td><td>${e.rows.map(r=>`<span class="mono">${r.id}</span> ${fmtD(toD(r.date))}`).join("<br>")}</td><td>${e.fixRow?`<span class="mono">${e.fixRow.id}</span> ${fmtD(toD(e.fixRow.date))}：${esc(e.fixRow.anon.slice(0,16))}…`:'<span class="pill warn">記載なし</span>'}</td><td class="n">${e.fixRow?e.days+"日":"—"}</td></tr>`).join(""):`<tr><td>この基準では、機械名を伴う「故障」の記載がありません。</td></tr>`;
+  $("repair-note").textContent="機械名は「〜機」「〜庫」、カタカナ語などを手がかりにした簡易抽出です。基準が「人が困りごとと判定」のときは、「故障ではなかった」などの記載は除かれます。";
+  // エージェント示唆
+  const A=[];const topD=taskStats(b,"d").filter(x=>x.k).sort((x,y)=>y.k-x.k||y.mean-x.mean)[0],topH=S.groups.length?(()=>{const c=months.map(m=>({m,k:S.rows.filter(r=>r.month===m&&cntB(r,"h",b)).length})).sort((x,y)=>y.k-x.k);return c[0]&&c[0].k?c:null})():null;
+  if(ep.length)A.push(["故障の受付と復旧の追跡","日誌の「故障」記載から対象機械・日付を抜き出して故障票を作り、業者連絡・部品待ち・復旧を状態として追う。復旧の記載がない票を週1回リマインド。",`故障${ep.length}件、復旧の記載なし${open.length}件${fixed.length?`、復旧まで ${fixed.map(e=>e.days).join("・")}日`:""}`,"故障票の項目（対象・症状・連絡先・状態）を現場と決める。業者への連絡文は下書きまでにする。"]);
+  if(topD)A.push(["作業遅れの早期通知とスケジュール再計算",`「${topD.task}」など遅れの多い作業について、遅れの記載が出た時点で後工程（出荷・集荷）の予定を再計算し、取引先への連絡文を下書きする。`,`「遅れ」は${topD.task}で${topD.k}/${topD.n}件`,"取引先への送信は人が確認してから行う。遅れの原因（天候・機械・人手）を分けて記録できるか試す。"]);
+  if(topH)A.push(["繁忙期の人員計画と応援要請の下書き",`「人手」の記載が多い時期（${topH.filter(x=>x.k===topH[0].k).map(x=>+x.m.slice(5)+"月").join("・")}）の前に、作業量の見込みと必要人数を出し、応援要請の文面を下書きする。`,`「人手」は${topH.filter(x=>x.k===topH[0].k).map(x=>+x.m.slice(5)+"月").join("・")}に各${topH[0].k}件（月平均 ${(topH.reduce((a,x)=>a+x.k,0)/topH.length).toFixed(1)}件）`,"前年の日誌でも同じ時期に増えるか確かめる。シフト確定は人が行う。"]);
+  if(bestL&&bestL.L.lift>=1.3)A.push(["困りごとの連鎖の警告",`「${bestL.a.base}」が書かれたら、${W}日以内に「${bestL.c.base}」が起きやすいことを担当者に知らせる。`,`${(bestL.L.pA*100).toFixed(0)}%（基準 ${(bestL.L.base*100).toFixed(0)}%）`,"因果かどうかは未確認。故障の有無以外の条件（時期・作業）をそろえて比べる。"]);
+  A.push(["日誌入力の補助","記入時に「困りごとあり／なし」と分類（遅れ・故障・人手・その他）を選ぶ欄を付け、自由記述の判定の手間と否定表現の誤判定を減らす。",fl?`否定ルールの誤反応 ${flY}/${fl}件`:"自由記述のみ","入力の手間が増えすぎないか、現場で2週間試す。"]);
+  $("agent").innerHTML=`<tr><th>候補となるエージェントの仕事</th><th>何をするか</th><th>根拠（このデータ）</th><th>次に確かめること・人が決めること</th></tr>`+A.map(a=>`<tr><td style="min-width:150px"><b style="font-weight:500">${esc(a[0])}</b></td><td style="min-width:220px">${esc(a[1])}</td><td style="min-width:140px">${esc(a[2])}</td><td style="min-width:200px">${esc(a[3])}</td></tr>`).join("");
+  S.agentRows=A;
+  // Python
+  const ex=TS[0]||{task:"出荷調整",k:0,n:1};
+  $("py-bayes").innerHTML=esc(`import numpy as np
+from scipy import stats
+
+# ${ex.task}：困りごと日誌 k 件 / 日誌 n 件（基準：${$("ins-basis").selectedOptions[0].text}）
+k, n = ${ex.k}, ${ex.n}
+K, N = ${S.rows.filter(r=>tgtB(r,b,t)).length}, ${N}           # 全体
+
+post = stats.beta(1 + k, 1 + n - k)        # 事前分布 Beta(1,1) × 二項尤度
+print("推定:", post.mean(), "90%区間:", post.interval(0.90))
+
+rest = stats.beta(1 + (K - k), 1 + (N - n) - (K - k))   # それ以外の作業
+rng = np.random.default_rng(0)
+p = (post.rvs(4000, random_state=rng) > rest.rvs(4000, random_state=rng)).mean()
+print("他の作業より高い確率:", p)`).replace(/(#.*)$/gm,'<span class="cm">$1</span>')}
+function insightsMarkdown(){const b=$("ins-basis").selectedOptions[0].text;return `## 作業日誌のインサイト（基準：${b}、日誌${S.rows.length}件）\n\n`+(S.insights||[]).map((x,i)=>`${i+1}. **${x.title}**（根拠：${x.strength}）\n   - 根拠：${x.ev}\n   - 原文：${idList(x.ids,10)}\n   - 注意：${x.cav}`).join("\n")+`\n\n### AIエージェント導入の示唆\n\n| 仕事 | 根拠 | 次に確かめること |\n|---|---|---|\n`+(S.agentRows||[]).map(a=>`| ${a[0]} | ${a[2]} | ${a[3]} |`).join("\n")+"\n"}
+
+/* ---------- 共通 ---------- */
+function renderStatus(){const N=S.rows.length;const dates=S.rows.map(r=>r.date).filter(Boolean).sort();
+  $("st-n").innerHTML=`${N} <small>件${dates.length?"・"+dates[0].slice(0,7)+"〜"+dates[dates.length-1].slice(0,7):""}</small>`;
+  const nrep=S.log.reduce((s,e)=>s+e.n,0),autoN=S.log.filter(e=>e.how==="自動").length;const chk=store.get("safe",{});const allChk=[0,1,2,3,4].every(i=>chk[i]);
+  $("st-anon").innerHTML=`${nrep} <small>箇所</small> ${allChk?'<span class="pill good">✓ 確認済み</span>':autoN?'<span class="pill warn">⚠ 要確認</span>':'<span class="pill warn">⚠ 未確認</span>'}`;
+  const hit=S.rows.filter(r=>S.groups.some(g=>r.m[g.k].hit));$("st-hit").innerHTML=`${hit.length} <small>件 / ${N}</small>`;
+  let tot=0,rev=0,yes=0;hit.forEach(r=>S.groups.forEach(g=>{if(!r.m[g.k].hit)return;tot++;const L=label(r,g.k);if(L!==undefined)rev++;}));S.rows.forEach(r=>{if(docLabel(r)===1)yes++});
+  $("st-rev").innerHTML=`${rev} <small>/ ${tot}（日誌×語）</small>`;$("st-yes").innerHTML=`${yes} <small>件の日誌</small>`}
+function renderAll(keepEdit){renderStatus();renderData();if(!keepEdit)renderKwEdit();renderCount();fillKwSelect($("kw-filter"),true);fillKwSelect($("code-kw"),false);fillKwSelect($("ai-kw"),false);renderRead();renderCode();renderAI();renderModel();renderInsights()}
+function showTab(t){S.tab=t;document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelectorAll("section.pane").forEach(s=>s.classList.toggle("on",s.id==="pane-"+t));document.querySelectorAll("#pipe div").forEach(d=>d.classList.toggle("on",d.dataset.p===t));store.set("tab",t)}
+document.querySelector("nav.tabs").onclick=e=>{const b=e.target.closest("button");if(b)showTab(b.dataset.tab)};
+document.addEventListener("change",e=>{const s=e.target.closest("select.judge");if(!s)return;const k=s.dataset.key;if(s.value==="")LABELS[k]=undefined,delete LABELS[k];else LABELS[k]=+s.value;
+  // サンプルの判定例を「未確認」に戻したい場合も記録する
+  if(s.value===""&&S.isSample&&S.sampleLabels[k]!==undefined)delete S.sampleLabels[k];
+  store.set("labels",LABELS);s.className="judge "+(s.value==="1"?"y":s.value==="0"?"n":"");renderStatus();renderCount();renderCo();renderCode();renderModel();renderInsights();
+  const diffBox=$("diff");if(diffBox){const f=$("flag-filter").value;if(f==="todo"||f==="diff")renderRead();else{const keep=window.scrollY;renderRead();window.scrollTo(0,keep)}}});
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-copy],[data-copy-pre],#copy-anon");if(!b)return;let txt;
+  if(b.id==="copy-anon"){const q=s=>/[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;txt="ID,日付,作業,記入者,本文\n"+S.rows.map(r=>[r.id,r.date,r.task,r.writerCode,r.anon].map(q).join(",")).join("\n")}
+  else{const el=$(b.dataset.copy||b.dataset.copyPre);txt=el.value!==undefined?el.value:el.textContent}
+  const label0=b.textContent;try{await navigator.clipboard.writeText(txt);b.textContent="コピーしました"}catch(err){b.textContent="コピーできませんでした";if(b.dataset.copy){$(b.dataset.copy).select()}}setTimeout(()=>b.textContent=label0,1600)});
+function init(){$("raw").value=SAMPLE;$("dict-name").value=SAMPLE_NAMES;$("dict-org").value=SAMPLE_ORGS;$("neg").value=S.neg;setNeg();
+  $("load").onclick=load;$("load-sample").onclick=()=>{$("raw").value=SAMPLE;$("dict-name").value=SAMPLE_NAMES;$("dict-org").value=SAMPLE_ORGS;load()};
+  $("auto").onchange=load;$("nfkc").onchange=load;$("show-raw").onchange=renderData;
+  $("ex").value=S.ex;setNeg();
+  $("ex").oninput=e=>{S.ex=e.target.value;setNeg();analyze();renderAll(true)};
+  $("use-ex").onchange=e=>{S.useEx=e.target.checked;analyze();renderAll(true)};
+  $("heat-mode").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.heatMode=b.dataset.v;$("heat-mode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderCount()};
+  $("ng-n").onchange=renderNgram;$("ng-dir").onchange=renderNgram;
+  const meta=store.get("ai-meta",{});$("ai-svc").value=meta.svc||"";$("ai-model").value=meta.model||"";
+  const d=new Date(),p2=v=>String(v).padStart(2,"0");$("ai-when").value=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+  ["ai-kw","ai-scope"].forEach(id=>$(id).onchange=()=>{$("ai-ans").value="";renderAI()});
+  $("ai-ans").oninput=renderAI;["ai-svc","ai-model","ai-when"].forEach(id=>$(id).oninput=()=>renderAI());
+  $("ai-demo").onclick=()=>{$("ai-ans").value=aiDemo();renderAI()};
+  renderReportChecks();
+  $("syn").onchange=e=>{S.syn=e.target.checked;analyze();renderAll(true)};
+  $("neg").oninput=e=>{S.neg=e.target.value;setNeg();analyze();renderAll(true)};
+  $("basis").onclick=e=>{const b=e.target.closest("button");if(!b)return;S.basis=b.dataset.v;$("basis").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderCount();renderCo();renderNgram();renderStatus()};
+  $("kw-filter").onchange=renderRead;$("flag-filter").onchange=renderRead;$("code-kw").onchange=renderCode;
+  $("memo").oninput=()=>memoTouched=true;$("memo-reset").onclick=()=>{memoTouched=false;renderMemo()};
+  $("m-in").oninput=predictInput;
+  ["ins-basis","ins-target","lag-a","lag-b","lag-w"].forEach(id=>$(id).addEventListener("change",renderInsights));$("lag-w").addEventListener("input",renderInsights);
+  $("ins-copy").onclick=async e=>{const b=e.target;try{await navigator.clipboard.writeText(insightsMarkdown());b.textContent="コピーしました"}catch(err){b.textContent="コピーできませんでした"}setTimeout(()=>b.textContent="Markdownでコピー",1600)};
+  load();showTab(store.get("tab","data"));
+  const redraw=()=>{renderCount();renderInsights()};matchMedia("(prefers-color-scheme: dark)").addEventListener("change",redraw);new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]})}
+init();
+</script>
+
+</body></html>

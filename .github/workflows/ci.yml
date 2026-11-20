@@ -17,4 +17,5 @@ jobs:
       - run: pip install -r requirements.txt pytest
       - run: python genai_core.py
       - run: python nox_core.py
+      - run: python diary_core.py
       - run: pytest -q

@@ -1,4 +1,4 @@
-"""「X 売る」ページの ⑥ Instagram に投稿する（画面部分）
+"""「X 売る」ページの ⑦ Instagram に投稿する（画面部分）
 
 設定は Streamlit の Secrets（.streamlit/secrets.toml、またはCommunity Cloud の Settings → Secrets）に置く：
     [instagram]
@@ -52,7 +52,7 @@ def _setup_guide() -> None:
 
 
 def section(scene: str, farm_name: str, month: str) -> None:
-    st.subheader("⑥ Instagram に投稿する")
+    st.subheader("⑦ Instagram に投稿する")
     st.write("②の質問文で生成AIにつくらせた案を、自分の言葉に直してから投稿します。写真は位置情報（EXIF）を消し、Instagram の縦横比に合わせてから送ります。")
     cfg = _config()
     ready = bool(cfg.get("access_token") and cfg.get("passcode") and cfg.get("public_base_url"))

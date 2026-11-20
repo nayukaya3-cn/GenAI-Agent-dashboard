@@ -14,10 +14,10 @@
 | 農＋X | `views/nox_home.py` | モノから暮らしの風景へ、の整理。レジリエンスの3点、3つの原則、はじめの一歩、人手と関係人口 |
 | 農 | `views/nox_rotation.py` | ブロック輪作の一年。農・加工・X（講師・支援・発信・体験）の月別時間を重ね、余白を見る |
 | 収入 | `views/nox_portfolio.py` | 収入の柱を組み合わせ、天候・不作・契約の成否を1万年分引いて「悪い年（下位5%）」の手取りを比べる |
-| X 売る | `views/nox_market.py` | 風景パッケージの設計、発信カレンダー→生成AIに貼る質問文、ファンの育ち方とLTV、MVPのベイズ判定、農業法人への支援メニュー |
+| X 売る | `views/nox_market.py` | 風景パッケージの設計、発信カレンダー→生成AIに貼る質問文、ファンの育ち方とLTV、MVPのベイズ判定、農業法人への支援メニュー、⑥ 支援先の声を読む（作業日誌・定期便の感想の困りごと分析：匿名化→件数と回数→原文で人が判定→作業ごとの割合のベイズ推定→エージェントに任せる候補→生成AIの答えの照合と報告） |
 | X 教える | `views/nox_teach.py` | 作業学習→技能検定→職場体験実習→就職・定着の流れ、畑の工程↔検定種目↔実習先、評価表で級の目安と次のめあて、3場面の記録（JEED の3段階・CSV）、POP特別編（`static/pop_card.html`）、卒業生講座、同じ工程の「なぜ」＝「科学と人間生活」 |
 
-計算は `nox_core.py`（Streamlit 非依存、`python nox_core.py` で自己チェック）。
+計算は `nox_core.py`（Streamlit 非依存、`python nox_core.py` で自己チェック）。⑥ の困りごと分析は `diary_core.py`（同じく `python diary_core.py`）と `diary_ui.py`。ブラウザだけで動くフル版は `static/diary_analysis.html`（ページからダウンロードできます）。
 
 ## 生成AIの道具箱（01〜07）
 
@@ -47,7 +47,7 @@ URL は `social.py` で一括管理しています（姉妹サイト「スマー
 ## 方針
 
 - **生成AIを呼び出しません。** APIキーを持たず、入力を外へ送りません。組み立てた文は、利用者が自分で貼ります。
-  例外は「X 売る」の ⑥ Instagram 投稿だけです。Secrets に設定した合言葉を入れた本人が投稿ボタンを押したときだけ、本文と画像を Instagram に送ります。
+  例外は「X 売る」の ⑦ Instagram 投稿だけです。Secrets に設定した合言葉を入れた本人が投稿ボタンを押したときだけ、本文と画像を Instagram に送ります。
 - **初期データはすべて架空です。** 作業時間・単価・確率も仮置きで、収入のシミュレーションは予測ではなく考えるための道具です。 人は「Aさん」などの仮名。障害の種類や診断名を書く欄は作っていません。
 - **判定の境目・辞書・点数は仮置きです。** 現場の支援者が `genai_core.py` を書きかえて使います。
 - **点検は見落とします。** 「見つからなかった」は「安全」ではありません。最後に確かめるのは人です。
@@ -65,6 +65,7 @@ streamlit run app.py
 python nox_core.py       # 農＋X の計算部品の自己チェック
 python genai_core.py     # 道具箱の計算部品の自己チェック
 python insta_core.py     # Instagram 投稿部品の自己チェック
+python diary_core.py     # 困りごと分析の部品の自己チェック
 pip install pytest && pytest -q   # 部品のテスト＋全ページの描画テスト
 ```
 
@@ -76,7 +77,7 @@ pip install pytest && pytest -q   # 部品のテスト＋全ページの描画�
 2. https://share.streamlit.io で「Create app」→ リポジトリとブランチ `main`、Main file path に `app.py` を指定する
 3. Secrets は、Instagram 投稿を使うときだけ設定します（使わなければ不要。そのときは本文と画像をダウンロードして手で投稿する道だけが出ます）
 
-### Instagram 投稿の設定（「X 売る」⑥）
+### Instagram 投稿の設定（「X 売る」⑦）
 
 Instagram API with Instagram Login（`graph.instagram.com`）の2段階投稿（`/media` → `/media_publish`）を使います。
 
@@ -100,7 +101,9 @@ public_base_url = "https://genai-agent-dashboard-e5xwcfhek9efndwczfb9k9.streamli
 
 ```
 insta_core.py     Instagram 投稿の部品（本文・画像の整形、API呼び出し。Streamlit 非依存）
-insta_ui.py       「X 売る」⑥ Instagram に投稿する の画面
+diary_core.py     「X 売る」⑥ 困りごと分析の部品（匿名化・件数と回数・否定の印・ベイズ・照合。Streamlit 非依存）
+diary_ui.py       「X 売る」⑥ 支援先の声を読む の画面
+insta_ui.py       「X 売る」⑦ Instagram に投稿する の画面
 app.py            入口（st.navigation で「農＋X」5ページと「道具箱」7ページを束ねる）
 nox_core.py       農＋X のデータと計算（Streamlit 非依存）
 genai_core.py     道具箱のデータと計算（Streamlit 非依存）
