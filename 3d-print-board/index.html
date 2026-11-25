@@ -355,11 +355,15 @@ const stu=id=>S.students.find(s=>s.id===id);
 
 /* ---------- 画面切り替え ---------- */
 const VIEWS=['overview','tasks','eval','library','partners','calendar','data'];
-function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):'overview';
+/* タブは script で切りかえる（Streamlit などに埋め込まれたとき、#リンクで外のページへ移らないように） */
+let cur=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):'overview';
+function go(v){if(!VIEWS.includes(v))return;cur=v;try{if(location.hash.slice(1)!==v)history.replaceState(null,'','#'+v)}catch(e){}route();try{scrollTo(0,0)}catch(e){}}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#"]');if(!a)return;const v=a.getAttribute('href').slice(1);if(VIEWS.includes(v)){e.preventDefault();go(v)}});
+function route(){const v=cur;
  for(const x of VIEWS)$('v-'+x).classList.toggle('hidden',x!==v);
  for(const a of document.querySelectorAll('.tabs a'))a.setAttribute('aria-current',a.dataset.v===v?'page':'false');
  ({overview:rOverview,tasks:rTasks,eval:rEval,library:rLib,partners:rPartners,calendar:rCal,data:rData})[v]()}
-addEventListener('hashchange',route);
+addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(VIEWS.includes(v)&&v!==cur){cur=v;route()}});
 
 /* ---------- 全体 ---------- */
 function tower(list){const L=list.slice(0,9),W=200,H=150,lh=12,n=L.length;let g='';

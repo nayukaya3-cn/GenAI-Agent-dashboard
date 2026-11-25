@@ -37,7 +37,7 @@
 ## 3Dプリンター業務推進ボード（`3d-print-board/`）
 
 特別支援学校の作業学習と障害者雇用で、3Dプリンター・3Dモデリングを使う業務（仕上げ作業・治具・自助具・3Dモデリング）の進み具合を見える化する、ブラウザ1枚で動くダッシュボードです（試作）。Streamlit とは独立しています。
-推進業務のかんばん、仕上げ作業評価表（試案）の記録と級・ベイズ推定、OpenSCADの治具生成、職域・連携先、逆算カレンダー、JSONの書き出し・読み込みがあります。詳しくは [`3d-print-board/README.md`](3d-print-board/README.md)。初期データの形式は `tests/test_3d_board.py` で確かめます。
+推進業務のかんばん、仕上げ作業評価表（試案）の記録と級・ベイズ推定、OpenSCADの治具生成、職域・連携先、逆算カレンダー、JSONの書き出し・読み込みがあります。Streamlit アプリでは「特別支援学校 × 3Dプリンター」のページ（`views/print3d.py`、URLは `/print3d`）に埋め込んでいます。詳しくは [`3d-print-board/README.md`](3d-print-board/README.md)。初期データの形式は `tests/test_3d_board.py` で確かめます。
 
 ## つくった人・連絡先
 
