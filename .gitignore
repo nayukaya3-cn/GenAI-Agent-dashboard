@@ -5,3 +5,6 @@ __pycache__/
 .streamlit/secrets.toml
 .env
 static/ig/
+
+# 3d-print-board: 生徒の記録を書き出したJSONは公開しない
+3d-print-board/data/3d-board-*.json
