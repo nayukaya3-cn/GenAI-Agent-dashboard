@@ -15,6 +15,7 @@ NOX_SHORT = {"nox_home": "暮らしの風景を届ける", "nox_rotation": "輪�
 pages = {
     "農＋X ライフスタイル": [st.Page(ui.page_path(k), title=f"{verb}｜{NOX_SHORT[k]}", url_path=k.removeprefix("nox_") if k != "nox_home" else "home",
                                   default=(k == "nox_home")) for k, no, verb, sub in ui.NOX],
+    "特別支援学校 × 3Dプリンター": [st.Page("views/print3d.py", title="3Dプリンター業務推進ボード", url_path="print3d")],
     "生成AIの道具箱": [st.Page(f"views/{k}.py", title=f"{no} {verb}｜{SHORT.get(k, sub)}", url_path=k) for k, no, verb, sub in ui.STEPS],
 }
 nav = st.navigation(pages)
