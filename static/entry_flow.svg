@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" role="img" aria-labelledby="t d" font-family="sans-serif">
+  <title id="t">4分野を同じ型で回し、課題は練習に戻す</title>
+  <desc id="d">上段は農業（育てる）、食品加工（加工する）、流通・物流（届ける）の流れ。その下に、3分野の作業を治具で改善するものづくり。下段は、どの分野でも使う型：手順書、練習、外部評価、職場実習、就職・定着。外部評価と職場実習で見つかった課題は練習に戻す。</desc>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b7a90"/></marker>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#eb6834"/></marker>
+  </defs>
+  <rect width="760" height="430" rx="18" fill="#fcfcfb"/>
+  <text x="24" y="36" font-size="18" font-weight="700" fill="#14171d">4分野を同じ型で回し、課題は練習に戻す</text>
+
+  <!-- 上段：育てる → 加工する → 届ける -->
+  <g font-size="15" text-anchor="middle" fill="#14171d">
+    <rect x="60" y="62" width="180" height="50" rx="10" fill="#e9f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+    <text x="150" y="93">🌱 農業：育てる</text>
+    <rect x="290" y="62" width="180" height="50" rx="10" fill="#e9f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+    <text x="380" y="93">🍳 食品加工：加工する</text>
+    <rect x="520" y="62" width="180" height="50" rx="10" fill="#e9f1fc" stroke="#2a78d6" stroke-width="1.5"/>
+    <text x="610" y="93">📦 流通・物流：届ける</text>
+  </g>
+  <g stroke="#6b7a90" stroke-width="1.5" fill="none">
+    <path d="M240 87H286" marker-end="url(#ar)"/><path d="M470 87H516" marker-end="url(#ar)"/>
+    <path d="M150 150V116" marker-end="url(#ar)"/><path d="M380 150V116" marker-end="url(#ar)"/><path d="M610 150V116" marker-end="url(#ar)"/>
+    <path d="M380 192V236" marker-end="url(#ar)"/>
+  </g>
+  <g font-size="12" fill="#5b6575" text-anchor="middle"><text x="263" y="80">収穫物</text><text x="493" y="80">製品</text></g>
+
+  <!-- ものづくり -->
+  <rect x="60" y="150" width="640" height="42" rx="10" fill="#f1eadf" stroke="#c98f5a" stroke-width="1.5"/>
+  <text x="380" y="177" font-size="15" text-anchor="middle" fill="#14171d">🖨️ ものづくり：3Dプリンターで治具を作り、3分野の作業を改善</text>
+  <text x="392" y="220" font-size="12" fill="#5b6575">どの分野も</text>
+
+  <!-- 下段：同じ型 -->
+  <rect x="24" y="240" width="712" height="170" rx="12" fill="none" stroke="#9aa5b4" stroke-width="1.2" stroke-dasharray="5 5"/>
+  <text x="42" y="266" font-size="14" font-weight="700" fill="#14171d">同じ型で回す</text>
+  <g text-anchor="middle">
+    <rect x="40" y="284" width="112" height="58" rx="10" fill="#ffffff" stroke="#6b7a90" stroke-width="1.3"/>
+    <text x="96" y="309" font-size="14" font-weight="700" fill="#14171d">手順書</text><text x="96" y="329" font-size="12" fill="#5b6575">写真付き</text>
+    <rect x="182" y="284" width="112" height="58" rx="10" fill="#ffffff" stroke="#6b7a90" stroke-width="1.3"/>
+    <text x="238" y="309" font-size="14" font-weight="700" fill="#14171d">練習</text><text x="238" y="329" font-size="12" fill="#5b6575">評価表で</text>
+    <rect x="324" y="284" width="112" height="58" rx="10" fill="#ffffff" stroke="#6b7a90" stroke-width="1.3"/>
+    <text x="380" y="309" font-size="14" font-weight="700" fill="#14171d">外部評価</text><text x="380" y="329" font-size="12" fill="#5b6575">検定・企業</text>
+    <rect x="466" y="284" width="112" height="58" rx="10" fill="#ffffff" stroke="#6b7a90" stroke-width="1.3"/>
+    <text x="522" y="309" font-size="14" font-weight="700" fill="#14171d">職場実習</text><text x="522" y="329" font-size="12" fill="#5b6575">実習先の目</text>
+    <rect x="608" y="284" width="112" height="58" rx="10" fill="#fde9df" stroke="#eb6834" stroke-width="2"/>
+    <text x="664" y="309" font-size="14" font-weight="700" fill="#14171d">就職・定着</text><text x="664" y="329" font-size="12" fill="#5b6575">手順書を継承</text>
+  </g>
+  <g stroke="#6b7a90" stroke-width="1.5" fill="none">
+    <path d="M152 313H178" marker-end="url(#ar)"/><path d="M294 313H320" marker-end="url(#ar)"/>
+    <path d="M436 313H462" marker-end="url(#ar)"/><path d="M578 313H604" marker-end="url(#ar)"/>
+  </g>
+  <g stroke="#eb6834" stroke-width="1.6" fill="none">
+    <path d="M380 342V382H238V346" marker-end="url(#ar2)"/><path d="M522 342V382H380"/>
+  </g>
+  <text x="309" y="400" font-size="12" text-anchor="middle" fill="#c4501f">課題を練習に戻す（何度も）</text>
+</svg>
