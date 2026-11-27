@@ -19,4 +19,5 @@ jobs:
       - run: python nox_core.py
       - run: python diary_core.py
       - run: python entry_core.py
+      - run: python corpit_core.py
       - run: pytest -q
